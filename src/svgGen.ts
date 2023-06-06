@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+console.log(d3);
 
 export const margin = {top: 5, right: 30, bottom: 40, left: 5},
     width = window.innerWidth - margin.left - margin.right,

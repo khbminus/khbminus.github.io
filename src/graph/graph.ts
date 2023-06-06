@@ -37,7 +37,6 @@ if (FIX_UNKNOWN_NODES) {
             pushNewNode(e.target)
         }
     });
-    console.log(nodeEntries.filter(x => x.value == 0).map(x => x.name))
 }
 
 const links = svg
