@@ -18,7 +18,7 @@
     "type-check:watch": "npm run type-check -- --watch",
     "start:dev": "parcel src/index.html",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "parcel build ./src/index.html --public-url 'https://khbminus.github.io/kotlin-wasm-code-size-profiler-demo/'",
+    "build": "parcel build ./src/index.html --public-url './'",
     "push-gh-pages": "push-dir --dir=dist --branch=gh-pages --cleanup --verbose"
   }
 }
