@@ -1,12 +1,15 @@
 import * as d3 from "d3";
 import {kotlinRetainedSize} from "../retained-size";
 import {escapeHtml, findHierarchy} from "../processing";
-import {colors, height, svg, width} from "../svgGen";
+import {colors, createSvg} from "../svgGen";
 
 type Node = { name: string, value: number }
 
 const irMap = new Map(Object.entries(kotlinRetainedSize));
 const keys = [...irMap.keys()];
+const height = window.innerHeight;
+const width = window.innerWidth;
+const svg = createSvg(height, width)
 
 const hierarchyObj = findHierarchy(keys, 0, "Kotlin IR", irMap)
 

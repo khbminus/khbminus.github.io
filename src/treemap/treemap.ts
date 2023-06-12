@@ -1,9 +1,13 @@
 import * as d3 from "d3";
 import {kotlinDeclarationsSize} from "../ir-sizes";
 import {escapeHtml, findHierarchy} from "../processing";
-import {colors, height, svg, width} from "../svgGen";
+import {colors, createSvg} from "../svgGen";
 
 type Node = {name: string, value: number}
+
+const height = window.innerHeight;
+const width = window.innerWidth;
+const svg = createSvg(height, width)
 
 const irMap = new Map(Object.entries(kotlinDeclarationsSize));
 const keys = [...irMap.keys()];

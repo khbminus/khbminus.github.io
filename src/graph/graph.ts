@@ -4,16 +4,19 @@ import {kotlinDeclarationsSize} from "../ir-sizes";
 import {kotlinReachabilityInfos} from "../dce-graph";
 import {kotlinRetainedSize} from "../retained-size";
 import {deleteSelfEdges, escapeHtml, Node} from "../processing";
-import {colors, height, svg, width} from "../svgGen";
+import {colors, createSvg} from "../svgGen";
 
 const UNFOCUSED_LINE_STROKE = "#aaa";
 const FOCUSED_LINE_STROKE = "#fbe106"
 const FIX_UNKNOWN_NODES = true;
+const height = window.innerHeight * 0.98;
+const width = window.innerWidth * 0.8;
+const svg = createSvg(height, width)
+
 const irMap = new Map(Object.entries(kotlinDeclarationsSize));
 const sizeValues = [...irMap.entries()]
     .map(x => [kotlinRetainedSize[x[0]], kotlinRetainedSize[x[0]]])
     .reduce((a, b) => [Math.min(a[0], b[0]), Math.max(a[1], b[1])]);
-console.log(sizeValues)
 const radiusScale = d3
     .scaleLinear()
     .domain([
@@ -34,19 +37,29 @@ const nodeEntries: Node[] = [...irMap.entries()].map(lst => {
         "shallowValue": scale(radiusScale(lst[1]))
     };
 });
-console.log(nodeEntries);
-
 const names = new Set(nodeEntries.map(x => x.name));
 
-const edges = deleteSelfEdges(kotlinReachabilityInfos);
+type EdgeWithVisibility = {
+    source: string,
+    target: string,
+    isVisible: boolean
+}
+
+const edges: EdgeWithVisibility[] = deleteSelfEdges(kotlinReachabilityInfos).map(x => {
+    return {
+        "source": x.source,
+        "target": x.target,
+        "isVisible": true
+    }
+});
 
 if (FIX_UNKNOWN_NODES) {
 
     const pushNewNode = (name) => {
         nodeEntries.push({
             "name": name,
-            "value": 0,
-            "shallowValue": 0
+            "value": radiusScale(0),
+            "shallowValue": radiusScale(0) / Math.sqrt(2)
         })
         names.add(name);
     }
@@ -72,19 +85,21 @@ const categories = [...new Set(nodeEntries.map(x => x.name.split(".")[1]))],
         .domain(categories) // the data
         .range(colors);
 
+const forceLink = d3.forceLink()
+    .id(d => {
+        return (d as Node).name;
+    })
+    .links([...edges])
 
 const simulation = d3.forceSimulation(nodeEntries as SimulationNodeDatum[])
-    .force("link", d3.forceLink()
-        .id(d => {
-            return (d as Node).name;
-        })
-        .links(edges)
-    )
+    .force("link", forceLink)
     .force("charge", d3.forceManyBody().strength(-20))
     .force("center", d3.forceCenter(width / 2, height / 2))
     .force("collide", d3.forceCollide().radius(d =>
         (d as Node).value + 1.5).iterations(2))
     .on("tick", ticked);
+
+let lastClicked = null
 
 const nodes = svg
     .selectAll(".outer-circle")
@@ -103,6 +118,7 @@ const nodes = svg
         links.attr("stroke", UNFOCUSED_LINE_STROKE);
         tool.style("display", "none");
     })
+    .on("click", changeLinksOnClick)
     .call(
         // @ts-ignore
         drag(simulation)
@@ -128,6 +144,8 @@ const innerNodes = svg.selectAll(".circle-inner")
         links.attr("stroke", UNFOCUSED_LINE_STROKE);
         tool.style("display", "none");
     })
+    .on("click", changeLinksOnClick)
+    // @ts-ignore
     .call(drag(simulation))
 
 const promise = new Promise(r => setTimeout(r, 5000)).then(() => simulation.stop());
@@ -166,21 +184,21 @@ function ticked() {
         .attr(
             "x1",
             // @ts-ignore
-            d => d.source.x)
+            d => Math.max(0, Math.min(width, d.source.x)))
         .attr(
             "y1",
             // @ts-ignore
-            d => d.source.y
+            d => Math.max(0, Math.min(height, d.source.y))
         )
         .attr(
             "x2",
             // @ts-ignore
-            d => d.target.x
+            d => Math.max(0, Math.min(width, d.target.x))
         )
         .attr(
             "y2",
             // @ts-ignore
-            d => d.target.y
+            d => Math.max(0, Math.min(height, d.target.y))
         );
     nodes
         .attr("cx", d => {
@@ -231,5 +249,40 @@ function mousemove(event, d) {
     tool.style("left", event.x + 10 + "px")
     tool.style("top", event.y - 20 + "px")
     tool.style("display", "inline-block");
-    tool.html(`Name: ${escapeHtml(d.name)}<br>Retained value (radius): ${kotlinRetainedSize[d.name]}<br>Size of node (square width): ${kotlinDeclarationsSize[d.name]}`);
+    const radius = (d.name in kotlinRetainedSize ? kotlinRetainedSize[d.name] : 0);
+    const width = (d.name in kotlinDeclarationsSize ? kotlinDeclarationsSize[d.name] : 0);
+    tool.html(`Name: ${escapeHtml(d.name)}<br>Retained value (radius): ${radius}<br>Size of node (square width): ${width}`);
+}
+
+function changeLinksOnClick(event, d) {
+    if (lastClicked === d.name) {
+        svg.selectAll("line")
+            .style("visibility", ee => {
+                const e = ee as EdgeWithVisibility;
+                e.isVisible = true;
+                return "visible";
+            });
+        lastClicked = null;
+        (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>)
+            .links(edges);
+        simulation.alpha(0.1).restart();
+        return;
+    }
+    svg
+        .selectAll("line")
+        .style("visibility", ee => {
+            const e = ee as EdgeWithVisibility;
+            // @ts-ignore
+            e.isVisible = e.target.name === d.name || e.source.name === d.name;
+            return !e.isVisible ? "hidden" : "visible";
+        });
+    lastClicked = d.name;
+    (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>)
+        .links(
+            edges
+                // @ts-ignore
+                .filter(e => e.target.name === d.name || e.source.name === d.name)
+        );
+
+    simulation.alpha(0.1).restart();
 }

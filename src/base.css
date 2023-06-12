@@ -16,3 +16,11 @@
 /*body {*/
 /*    overflow: hidden;*/
 /*}*/
+
+.content-svg {
+    float: left;
+}
+
+.treeView {
+    float: right;
+}
