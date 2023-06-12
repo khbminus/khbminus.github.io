@@ -5,6 +5,8 @@ import {kotlinReachabilityInfos} from "../dce-graph";
 import {kotlinRetainedSize} from "../retained-size";
 import {deleteSelfEdges, escapeHtml, Node} from "../processing";
 import {colors, createSvg} from "../svgGen";
+import {setOnTableUpdate, visibilityMap} from "./treeView";
+
 
 const UNFOCUSED_LINE_STROKE = "#aaa";
 const FOCUSED_LINE_STROKE = "#fbe106"
@@ -222,6 +224,27 @@ function ticked() {
         });
 }
 
+setOnTableUpdate(() => {
+    nodes
+        .style("visibility", d => {
+            return visibilityMap.get(d.name) ? "visible" : "hidden";
+        })
+    innerNodes
+        .style("visibility", d => {
+            return visibilityMap.get(d.name) ? "visible" : "hidden";
+        })
+    links
+        .style("visibility", e => {
+            return isEdgeVisible(e) ? "visible" : "hidden";
+        });
+    (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>)
+        .links(edges.filter(isEdgeVisible));
+    simulation.nodes(
+        nodeEntries.filter(d => visibilityMap.get(d.name)) as SimulationNodeDatum[]
+    );
+    simulation.alpha(0.1).restart();
+})
+
 const tool = d3.select("body").append("div").attr("class", "toolTip").style("z-index", 2);
 
 function mousemove(event, d) {
@@ -260,7 +283,7 @@ function changeLinksOnClick(event, d) {
             .style("visibility", ee => {
                 const e = ee as EdgeWithVisibility;
                 e.isVisible = true;
-                return "visible";
+                return isEdgeVisible(e) ? "visible" : "hidden";
             });
         lastClicked = null;
         (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>)
@@ -274,7 +297,7 @@ function changeLinksOnClick(event, d) {
             const e = ee as EdgeWithVisibility;
             // @ts-ignore
             e.isVisible = e.target.name === d.name || e.source.name === d.name;
-            return !e.isVisible ? "hidden" : "visible";
+            return isEdgeVisible(e) ? "visible" : "hidden";
         });
     lastClicked = d.name;
     (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>)
@@ -285,4 +308,12 @@ function changeLinksOnClick(event, d) {
         );
 
     simulation.alpha(0.1).restart();
+}
+
+function isEdgeVisible(e: EdgeWithVisibility): boolean {
+    // @ts-ignore
+    const source = e.source.name;
+    // @ts-ignore
+    const target = e.target.name;
+    return visibilityMap.get(source) && visibilityMap.get(target) && e.isVisible;
 }

@@ -13,14 +13,17 @@
     text-align: center;
 }
 
-/*body {*/
-/*    overflow: hidden;*/
-/*}*/
+body {
+    overflow: scroll;
+}
 
 .content-svg {
     float: left;
 }
 
-.treeView {
+#treeView {
     float: right;
+    width: 17%;
+    height: 95vh;
+    overflow: auto;
 }
