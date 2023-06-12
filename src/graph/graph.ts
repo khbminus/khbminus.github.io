@@ -11,7 +11,7 @@ import {setOnTableUpdate, visibilityMap} from "./treeView";
 const UNFOCUSED_LINE_STROKE = "#aaa";
 const FOCUSED_LINE_STROKE = "#fbe106"
 const FIX_UNKNOWN_NODES = true;
-const height = window.innerHeight * 0.98;
+const height = window.innerHeight * 0.95;
 const width = window.innerWidth * 0.8;
 const svg = createSvg(height, width)
 
