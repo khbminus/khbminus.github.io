@@ -40,7 +40,7 @@ export function findHierarchy(strings: Array<String>, depth: number, name: strin
 }
 
 export type Edge = { source: string, target: string, description: string, isTargetContagious: boolean };
-export type Node = { name: string, value: number };
+export type Node = { name: string, value: number, shallowValue: number };
 
 export function deleteSelfEdges(edges: Array<Edge>): Array<Edge> {
     return edges.filter(e => e.source !== e.target);
