@@ -291,12 +291,12 @@ function changeLinksOnClick(event, d) {
         simulation.alpha(0.1).restart();
         return;
     }
-    svg
-        .selectAll("line")
+    links
         .style("visibility", ee => {
             const e = ee as EdgeWithVisibility;
             // @ts-ignore
             e.isVisible = e.target.name === d.name || e.source.name === d.name;
+            console.log(e, visibilityMap.get(e.target.name), visibilityMap.get(e.source.name), isEdgeVisible(e) ? "visible" : "hidden");
             return isEdgeVisible(e) ? "visible" : "hidden";
         });
     lastClicked = d.name;
