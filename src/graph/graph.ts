@@ -334,7 +334,7 @@ function buildLegend() {
         .append("rect")
         .attr("x", 0)
         .attr("y", 0)
-        .style("fill", window.getComputedStyle(document.getElementById("treeView")).backgroundColor)
+        .style("fill", window.getComputedStyle(document.getElementById("tree-view-content")).backgroundColor)
         .style("stroke", "black")
         .style("stroke-width", 0.1);
 

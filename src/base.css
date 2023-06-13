@@ -17,9 +17,17 @@
     float: left;
 }
 
-#treeView {
+#tree-view-container {
+    display: flex;
+    flex-direction: column;
     float: right;
     width: 17%;
+}
+
+#tree-view-content {
     height: 95vh;
     overflow: auto;
+}
+input {
+    width: 100%;
 }
