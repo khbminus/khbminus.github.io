@@ -149,6 +149,7 @@ const innerNodes = svg.selectAll(".circle-inner")
     .on("click", changeLinksOnClick)
     // @ts-ignore
     .call(drag(simulation))
+buildLegend();
 
 const promise = new Promise(r => setTimeout(r, 5000)).then(() => simulation.stop());
 
@@ -296,7 +297,6 @@ function changeLinksOnClick(event, d) {
             const e = ee as EdgeWithVisibility;
             // @ts-ignore
             e.isVisible = e.target.name === d.name || e.source.name === d.name;
-            console.log(e, visibilityMap.get(e.target.name), visibilityMap.get(e.source.name), isEdgeVisible(e) ? "visible" : "hidden");
             return isEdgeVisible(e) ? "visible" : "hidden";
         });
     lastClicked = d.name;
@@ -316,4 +316,54 @@ function isEdgeVisible(e: EdgeWithVisibility): boolean {
     // @ts-ignore
     const target = e.target.name;
     return visibilityMap.get(source) && visibilityMap.get(target) && e.isVisible;
+}
+
+function buildLegend() {
+    const legend = svg
+        .append("g")
+        .attr("class", "legend")
+        .attr("transform", "translate(20, 10)");
+
+
+    const legendInner = legend
+        .append("g")
+        .attr("class", "legend-inner")
+        .attr("transform", "translate(10, 10)")
+        .style("font-size", "12px")
+    const legendRect = legend
+        .append("rect")
+        .attr("x", 0)
+        .attr("y", 0)
+        .style("fill", window.getComputedStyle(document.getElementById("treeView")).backgroundColor)
+        .style("stroke", "black")
+        .style("stroke-width", 0.1);
+
+    const legendCircle = legendInner
+        .append("circle")
+        .attr("r", "0.5em")
+        .attr("cx", 0)
+        .attr("cy", "-0.25em")
+        .style("fill", "#abc")
+    const CircleText = legendInner
+        .append("text")
+        .text("Retained size of an object")
+        .attr("x", 10)
+        .attr("y", 0);
+    const square = legendInner
+        .append("rect")
+        .attr("x", "-0.5em")
+        .attr("y", "0.75em")
+        .attr("height", "1em")
+        .attr("width", "1em")
+        .style("fill", "#a73b80")
+    const squareText = legendInner
+        .append("text")
+        .text("Shallow size of an object")
+        .attr("x", 10)
+        .attr("y", "1.6em")
+    const size = legendInner.node().getBBox();
+
+    legendRect.attr("height", size.height + 10)
+        .attr("width", size.width + 10)
+
 }

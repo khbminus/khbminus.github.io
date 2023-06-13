@@ -13,10 +13,6 @@
     text-align: center;
 }
 
-body {
-    overflow: scroll;
-}
-
 .content-svg {
     float: left;
 }
