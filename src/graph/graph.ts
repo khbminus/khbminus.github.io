@@ -101,8 +101,6 @@ const simulation = d3.forceSimulation(nodeEntries as SimulationNodeDatum[])
         (d as Node).value + 1.5).iterations(2))
     .on("tick", ticked);
 
-let lastClicked = null
-
 const nodes = svg
     .selectAll(".outer-circle")
     .data(nodeEntries)
@@ -152,6 +150,28 @@ const innerNodes = svg.selectAll(".circle-inner")
 buildLegend();
 
 const promise = new Promise(r => setTimeout(r, 5000)).then(() => simulation.stop());
+const tool = d3.select("body").append("div").attr("class", "toolTip").style("z-index", 2);
+
+setOnTableUpdate(() => {
+    nodes
+        .style("visibility", d => {
+            return isNodeVisible(d) ? "visible" : "hidden";
+        })
+    innerNodes
+        .style("visibility", d => {
+            return isNodeVisible(d) ? "visible" : "hidden";
+        })
+    links
+        .style("visibility", e => {
+            return isEdgeVisible(e) ? "visible" : "hidden";
+        });
+    (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>)
+        .links(edges.filter(isEdgeVisible));
+    simulation.nodes(
+        nodeEntries.filter(d => isNodeVisible(d)) as SimulationNodeDatum[]
+    );
+    simulation.alpha(0.1).restart();
+})
 
 function drag(simulation) {
     function dragstarted(event) {
@@ -225,29 +245,6 @@ function ticked() {
         });
 }
 
-setOnTableUpdate(() => {
-    nodes
-        .style("visibility", d => {
-            return visibilityMap.get(d.name) ? "visible" : "hidden";
-        })
-    innerNodes
-        .style("visibility", d => {
-            return visibilityMap.get(d.name) ? "visible" : "hidden";
-        })
-    links
-        .style("visibility", e => {
-            return isEdgeVisible(e) ? "visible" : "hidden";
-        });
-    (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>)
-        .links(edges.filter(isEdgeVisible));
-    simulation.nodes(
-        nodeEntries.filter(d => visibilityMap.get(d.name)) as SimulationNodeDatum[]
-    );
-    simulation.alpha(0.1).restart();
-})
-
-const tool = d3.select("body").append("div").attr("class", "toolTip").style("z-index", 2);
-
 function mousemove(event, d) {
     links
         .style(
@@ -278,36 +275,80 @@ function mousemove(event, d) {
     tool.html(`Name: ${escapeHtml(d.name)}<br>Retained value (radius): ${radius}<br>Size of node (square width): ${width}`);
 }
 
+let lastClicked = null;
+const reachableFromLastClickedNode = new Set([...nodeEntries.map(x => x.name)]);
+type NewEdge = {
+    source: { name: string },
+    target: { name: string },
+    isVisible: boolean
+}
+const adjacencyList: Map<string, NewEdge[]> = new Map();
+// @ts-ignore
+(edges as NewEdge[]).forEach(e => {
+    const list = (adjacencyList.has(e.source.name) ? adjacencyList.get(e.source.name) : []);
+    list.push(e);
+    adjacencyList.set(e.source.name, list);
+});
+
+
 function changeLinksOnClick(event, d) {
     if (lastClicked === d.name) {
+        nodeEntries.forEach(x => reachableFromLastClickedNode.add(x.name));
         svg.selectAll("line")
             .style("visibility", ee => {
                 const e = ee as EdgeWithVisibility;
                 e.isVisible = true;
                 return isEdgeVisible(e) ? "visible" : "hidden";
             });
+        nodes
+            .style("visibility", d => {
+                return isNodeVisible(d) ? "visible" : "hidden";
+            })
+        innerNodes
+            .style("visibility", d => {
+                return isNodeVisible(d) ? "visible" : "hidden";
+            })
         lastClicked = null;
         (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>)
             .links(edges);
+        simulation.nodes(nodeEntries.filter(d => isNodeVisible(d)) as SimulationNodeDatum[]);
         simulation.alpha(0.1).restart();
         return;
     }
+    reachableFromLastClickedNode.clear();
+    edges.forEach(x => x.isVisible = false);
+    depthFirstSearch(d.name);
     links
         .style("visibility", ee => {
             const e = ee as EdgeWithVisibility;
-            // @ts-ignore
-            e.isVisible = e.target.name === d.name || e.source.name === d.name;
             return isEdgeVisible(e) ? "visible" : "hidden";
         });
+    nodes
+        .style("visibility", d => {
+            return isNodeVisible(d) ? "visible" : "hidden";
+        })
+    innerNodes
+        .style("visibility", d => {
+            return isNodeVisible(d) ? "visible" : "hidden";
+        })
     lastClicked = d.name;
     (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>)
-        .links(
-            edges
-                // @ts-ignore
-                .filter(e => e.target.name === d.name || e.source.name === d.name)
-        );
+        .links(edges.filter(isEdgeVisible));
+    simulation.nodes(
+        nodeEntries.filter(d => isNodeVisible(d)) as SimulationNodeDatum[]
+    );
 
     simulation.alpha(0.1).restart();
+}
+
+function depthFirstSearch(currentNode: string) {
+    reachableFromLastClickedNode.add(currentNode);
+    adjacencyList.get(currentNode)?.forEach(edge => {
+        if (!reachableFromLastClickedNode.has(edge.target.name)) {
+            depthFirstSearch(edge.target.name);
+        }
+        edge.isVisible = true;
+    });
 }
 
 function isEdgeVisible(e: EdgeWithVisibility): boolean {
@@ -315,7 +356,12 @@ function isEdgeVisible(e: EdgeWithVisibility): boolean {
     const source = e.source.name;
     // @ts-ignore
     const target = e.target.name;
-    return visibilityMap.get(source) && visibilityMap.get(target) && e.isVisible;
+    return isNodeVisible(source) && isNodeVisible(target) && e.isVisible;
+}
+
+function isNodeVisible(d: Node | string): boolean {
+    const name = (typeof d == "string" ? d : d.name);
+    return visibilityMap.get(name) && reachableFromLastClickedNode.has(name);
 }
 
 function buildLegend() {
