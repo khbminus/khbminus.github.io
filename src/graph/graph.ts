@@ -3,7 +3,7 @@ import {scaleLinear, SimulationNodeDatum} from "d3";
 import {kotlinDeclarationsSize} from "../ir-sizes";
 import {kotlinReachabilityInfos} from "../dce-graph";
 import {kotlinRetainedSize} from "../retained-size";
-import {deleteSelfEdges, escapeHtml, Node} from "../processing";
+import {deleteSelfEdges, escapeHtml, IrSizeNode, Node} from "../processing";
 import {colors, createSvg} from "../svgGen";
 import {setOnTableUpdate, visibilityMap} from "./treeView";
 
@@ -15,7 +15,8 @@ const height = window.innerHeight * 0.95;
 const width = window.innerWidth * 0.8;
 const svg = createSvg(height, width)
 
-const irMap = new Map(Object.entries(kotlinDeclarationsSize));
+// @ts-ignore
+const irMap: Map<string, IrSizeNode> = new Map(Object.entries(kotlinDeclarationsSize));
 const sizeValues = [...irMap.entries()]
     .map(x => [kotlinRetainedSize[x[0]], kotlinRetainedSize[x[0]]])
     .reduce((a, b) => [Math.min(a[0], b[0]), Math.max(a[1], b[1])]);
@@ -36,7 +37,7 @@ const nodeEntries: Node[] = [...irMap.entries()].map(lst => {
     return {
         "name": lst[0],
         "value": r,
-        "shallowValue": scale(radiusScale(lst[1]))
+        "shallowValue": scale(radiusScale(lst[1].size))
     };
 });
 const names = new Set(nodeEntries.map(x => x.name));
@@ -64,6 +65,7 @@ if (FIX_UNKNOWN_NODES) {
             "shallowValue": radiusScale(0) / Math.sqrt(2)
         })
         names.add(name);
+        irMap.set(name, {size: 0, type: "unknown"});
     }
     edges.forEach(e => {
         if (!names.has(e.source)) {
@@ -82,7 +84,7 @@ const links = svg
     .append("line")
     .style("stroke", UNFOCUSED_LINE_STROKE);
 
-const categories = [...new Set(nodeEntries.map(x => x.name.split(".")[1]))],
+const categories = ["function", "property", "field", "anonymousInitializer", "class", "unknown"],
     colorScale = d3.scaleOrdinal() // the scale function
         .domain(categories) // the data
         .range(colors);
@@ -105,7 +107,7 @@ const nodes = svg
     .selectAll(".outer-circle")
     .data(nodeEntries)
     .join("circle")
-    .style("fill", d => colorScale(d.name.split(".")[1]) as string)
+    .style("fill", d => colorScale(irMap.get(d.name).type) as string)
     .style("stroke", "black")
     .style("stroke-width", 0.5)
     .style("z-index", 0)
@@ -127,7 +129,7 @@ const nodes = svg
 const innerNodes = svg.selectAll(".circle-inner")
     .data(nodeEntries)
     .join("rect")
-    .style("fill", d => colorScale(d.name.split(".")[1]) as string)
+    .style("fill", d => colorScale(irMap.get(d.name).type) as string)
     .style("opacity", 0.7)
     .style("stroke", "black")
     .style("stroke-width", 0.5)
@@ -271,7 +273,7 @@ function mousemove(event, d) {
     tool.style("top", event.y - 20 + "px")
     tool.style("display", "inline-block");
     const radius = (d.name in kotlinRetainedSize ? kotlinRetainedSize[d.name] : 0);
-    const width = (d.name in kotlinDeclarationsSize ? kotlinDeclarationsSize[d.name] : 0);
+    const width = (d.name in kotlinDeclarationsSize ? kotlinDeclarationsSize[d.name].size : 0);
     tool.html(`Name: ${escapeHtml(d.name)}<br>Retained value (radius): ${radius}<br>Size of node (square width): ${width}`);
 }
 
@@ -370,20 +372,18 @@ function buildLegend() {
         .attr("class", "legend")
         .attr("transform", "translate(20, 10)");
 
-
+    const legendRect = legend
+        .append("rect")
+        .attr("x", 0)
+        .attr("y", 0)
+        .style("fill", "#fff")
+        .style("stroke", "black")
+        .style("stroke-width", 0.1);
     const legendInner = legend
         .append("g")
         .attr("class", "legend-inner")
         .attr("transform", "translate(10, 10)")
         .style("font-size", "12px")
-    const legendRect = legend
-        .append("rect")
-        .attr("x", 0)
-        .attr("y", 0)
-        .style("fill", window.getComputedStyle(document.getElementById("tree-view-content")).backgroundColor)
-        .style("stroke", "black")
-        .style("stroke-width", 0.1);
-
     const legendCircle = legendInner
         .append("circle")
         .attr("r", "0.5em")
@@ -393,7 +393,7 @@ function buildLegend() {
     const CircleText = legendInner
         .append("text")
         .text("Retained size of an object")
-        .attr("x", 10)
+        .attr("x", "1em")
         .attr("y", 0);
     const square = legendInner
         .append("rect")
@@ -401,14 +401,46 @@ function buildLegend() {
         .attr("y", "0.75em")
         .attr("height", "1em")
         .attr("width", "1em")
-        .style("fill", "#a73b80")
+        .attr("stroke", "black")
+        .style("fill", "#ffffff")
+        .attr("stroke-width", 1.5)
     const squareText = legendInner
         .append("text")
         .text("Shallow size of an object")
-        .attr("x", 10)
+        .attr("x", "1em")
         .attr("y", "1.6em")
-    const size = legendInner.node().getBBox();
+    const categoriesSquares = legendInner
+        .selectAll(".cat-rect")
+        .data(categories)
+        .enter()
+        .append("rect")
+        .attr("x", "-0.5em")
+        .attr("y", (d, i) => `${2.25 + i * 1.5}em`)
+        .attr("width", "1em")
+        .attr("height", "1em")
+        .attr("class", "cat-rect")
+        .style("fill", d => colorScale(d) as string);
+    const categoriesCircle = legendInner
+        .selectAll(".cat-circle")
+        .data(categories)
+        .enter()
+        .append("circle")
+        .attr("cx", "1.5em")
+        .attr("cy", (d, i) => `${2.75 + i * 1.5}em`)
+        .attr("r", "0.5em")
+        .attr("class", "cat-circle")
+        .style("fill", d => colorScale(d) as string);
+    const categoriesText = legendInner
+        .selectAll(".cat-text")
+        .data(categories)
+        .enter()
+        .append("text")
+        .text(d => `Ir element with type ${d}`)
+        .attr("x", "2.5em")
+        .attr("y", (d, i) => `${3 + i * 1.5}em`)
+        .attr("class", ".cat-text");
 
+    const size = legendInner.node().getBBox();
     legendRect.attr("height", size.height + 10)
         .attr("width", size.width + 10)
 
