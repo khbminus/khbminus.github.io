@@ -77,17 +77,20 @@ if (FIX_UNKNOWN_NODES) {
     });
 }
 
+const categories = ["function", "property", "field", "anonymousInitializer", "class", "unknown"],
+    colorScale = d3.scaleOrdinal() // the scale function
+        .domain(categories) // the data
+        .range(colors);
+
+buildLegend();
+
+
 const links = svg
     .selectAll("line")
     .data(edges)
     .enter()
     .append("line")
     .style("stroke", UNFOCUSED_LINE_STROKE);
-
-const categories = ["function", "property", "field", "anonymousInitializer", "class", "unknown"],
-    colorScale = d3.scaleOrdinal() // the scale function
-        .domain(categories) // the data
-        .range(colors);
 
 const forceLink = d3.forceLink()
     .id(d => {
@@ -149,7 +152,6 @@ const innerNodes = svg.selectAll(".circle-inner")
     .on("click", changeLinksOnClick)
     // @ts-ignore
     .call(drag(simulation))
-buildLegend();
 
 const promise = new Promise(r => setTimeout(r, 5000)).then(() => simulation.stop());
 const tool = d3.select("body").append("div").attr("class", "toolTip").style("z-index", 2);
