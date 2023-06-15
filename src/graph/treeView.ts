@@ -3,7 +3,7 @@ import {kotlinReachabilityInfos} from "../dce-graph";
 
 const tableDiv = document.getElementById("tree-view-content");
 let table: HTMLTableElement = null
-const irMap = new Map(Object.entries(kotlinDeclarationsSize));
+const irMap = new Map(Object.entries(kotlinDeclarationsSize).map(x => [x[0], x[1].size]));
 
 
 kotlinReachabilityInfos.forEach(edge => {
@@ -49,7 +49,7 @@ function checkBoxInput(ev: Event) {
 }
 
 function buildTable(inputString: string) {
-    table =  document.createElement("table");
+    table = document.createElement("table");
     entries.forEach(x => {
         const name = x[0];
         if (!name.includes(inputString)) {
