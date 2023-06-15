@@ -12,8 +12,8 @@ export function createSvg(height, width) {
 }
 
 export const
-    colors = ['#e06ec1', '#9E999D', '#F2259C', '#347EB4',
+    colors = ['#e06ec1', '#9E999D', '#824e6c', '#347EB4',
         '#08ACB6', '#91BB91', '#BCD32F', '#75EDB8',
-        "#89EE4B", '#AD4FE8', '#D5AB61', '#BC3B3A',
+        "#a4d08e", '#AD4FE8', '#D5AB61', '#bb9367',
         '#F6A1F9', '#87ABBB', '#91647c', '#56B870',
         '#FDAB41', '#64624F']
