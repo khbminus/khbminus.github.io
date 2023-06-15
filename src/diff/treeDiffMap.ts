@@ -11,7 +11,7 @@ const irMap1 = new Map(Object.entries(sizes1).map(x => [x[0], x[1].size]));
 const irMap2 = new Map(Object.entries(sizes2).map(x => [x[0], x[1].size]))
 
 const keys = [...new Set([...irMap1.keys(), ...irMap2.keys()])];
-const height = window.innerHeight * 0.985;
+const height = window.innerHeight * 0.96;
 const width = window.innerWidth * 0.98;
 const svg = createSvg(height, width)
 const patterns = d3.select("svg").append("defs");
@@ -71,7 +71,7 @@ const treemap = d3.treemap()
     // .paddingInner(3);
 const root = treemap(hierarchy);
 const colorScale = (d: d3.HierarchyRectangularNode<any>) => colors[d.depth];
-svg.selectAll("rect")
+const nodes = svg.selectAll("rect")
     .data(root.descendants())
     .enter()
     .append("rect")
@@ -79,20 +79,7 @@ svg.selectAll("rect")
     .attr("y", d => d.y0)
     .attr("width", (d, i) => d.x1 - d.x0 - 2 * d.depth)
     .attr("height", (d, i) => d.y1 - d.y0 - 2 * d.depth)
-    .attr("fill", d => {
-        const data = d.data as DiffTreeMapNode;
-        const color = colorScale(d);
-        if (data.category == "regular" || data.category == "middle") {
-            return color;
-        }
-        if (data.category == "diff-neg") {
-            // return `#ffff`;
-            console.log(`url(#${minusGradients.get(color)})`)
-            return `url(#${minusGradients.get(color)})`;
-        }
-        // return "white"
-        return `url(#${plusGradients.get(color)})`
-    })
+    .attr("fill", chooseCommonColor)
     .on("mousemove", function (event, d) {
         tool.style("left", event.x + 10 + "px")
         tool.style("top", event.y - 20 + "px")
@@ -137,6 +124,43 @@ svg
 
 const tool = d3.select("body").append("div").attr("class", "toolTip");
 
-function invertHex(hex) {
-    return (Number(`0x1${hex}`) ^ 0xFFFFFF).toString(16).substr(1).toUpperCase()
+(document.getElementById("viewMode") as HTMLSelectElement).oninput = (ev) => {
+    const value = (ev.currentTarget as HTMLSelectElement).value
+    let chooseNextColorFun = null
+    if (value == "common") {
+        chooseNextColorFun = chooseCommonColor
+    } else if (value == "diff-pos") {
+        chooseNextColorFun = (d) => {
+            const data = d.data as DiffTreeMapNode
+            if (data.category == "diff-pos") {
+                return "#BCD32F";
+            } else {
+                return "#808080";
+            }
+        }
+    } else {
+        chooseNextColorFun = (d) => {
+            const data = d.data as DiffTreeMapNode
+            if (data.category == "diff-neg") {
+                return "#b04046";
+            } else {
+                return "#808080";
+            }
+        }
+    }
+    nodes
+        .style("fill", chooseNextColorFun)
+}
+
+function chooseCommonColor(d): string {
+    const data = d.data as DiffTreeMapNode;
+    const color = colorScale(d);
+    if (data.category == "regular" || data.category == "middle") {
+        return color;
+    }
+    if (data.category == "diff-neg") {
+        console.log(`url(#${minusGradients.get(color)})`)
+        return `url(#${minusGradients.get(color)})`;
+    }
+    return `url(#${plusGradients.get(color)})`
 }
