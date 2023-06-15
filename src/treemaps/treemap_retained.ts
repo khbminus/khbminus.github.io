@@ -7,7 +7,7 @@ import {kotlinDeclarationsSize} from "../ir-sizes";
 const STROKE_SPACE = 4
 
 const irMap = new Map(Object.entries(kotlinRetainedSize));
-const irShallowMap = new Map(Object.entries(kotlinDeclarationsSize));
+const irShallowMap = new Map(Object.entries(kotlinDeclarationsSize).map(x => [x[0], x[1].size]));
 
 const keys = [...irMap.keys()];
 const height = window.innerHeight * 0.985;
