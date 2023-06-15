@@ -2,8 +2,8 @@ import * as d3 from "d3";
 import {escapeHtml} from "../processing";
 import {DiffTreeMapNode, findHierarchy} from "./processTreeDiff";
 import {colors, createSvg} from "../svgGen";
-import {kotlinDeclarationsSize as sizes1} from "../ir-sizes";
-import {kotlinDeclarationsSize as sizes2} from "../ir-sizes1";
+import {kotlinDeclarationsSize as sizes2} from "../ir-sizes";
+import {kotlinDeclarationsSize as sizes1} from "../ir-sizes1";
 
 const STROKE_SPACE = 4
 
@@ -77,8 +77,8 @@ svg.selectAll("rect")
     .append("rect")
     .attr("x", d => d.x0)
     .attr("y", d => d.y0)
-    .attr("width", d => d.x1 - d.x0)
-    .attr("height", d => d.y1 - d.y0)
+    .attr("width", (d, i) => d.x1 - d.x0 - 2 * d.depth)
+    .attr("height", (d, i) => d.y1 - d.y0 - 2 * d.depth)
     .attr("fill", d => {
         const data = d.data as DiffTreeMapNode;
         const color = colorScale(d);
