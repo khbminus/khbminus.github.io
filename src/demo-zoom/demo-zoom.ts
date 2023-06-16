@@ -152,6 +152,9 @@ function ticked() {
 }
 
 function onclick(event, d: Vertex) {
+    if (d.children.length === 0) {
+        return;
+    }
     console.log("clicked")
     circles.remove()
     // @ts-ignore
