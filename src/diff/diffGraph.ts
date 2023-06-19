@@ -9,7 +9,8 @@ import {diffMetaNodesInfo} from "./stdlib-diff/metanodes";
 
 const allMetaNodes = new Set(diffMetaNodesInfo.metaNodesList);
 console.log(allMetaNodes);
-const metaNodeData = new Map([...Object.entries(diffMetaNodesInfo.parent)]);
+// @ts-ignore
+const metaNodeData: Map<string, string> = new Map([...Object.entries(diffMetaNodesInfo.parent)]);
 const visibleVertex = new Set();
 function isMetaNode(v: string): boolean {
     return allMetaNodes.has(v);
@@ -94,6 +95,29 @@ if (FIX_UNKNOWN_NODES) {
         }
     });
 }
+
+const oldEdges = edges.map(x => ({...x}))
+const newAdjList: Map<string, Set<string>> = new Map();
+oldEdges.forEach(e => {
+    const src = e.source
+    const trg = e.target
+    if (isMetaNode(src)) {
+        return
+    }
+    const arr = (newAdjList.has(src) ? newAdjList.get(src) : new Set<string>());
+    arr.add(metaNodeData.get(trg))
+    newAdjList.set(src, arr);
+});
+([...newAdjList.entries()]).forEach(x => {
+    const src = x[0];
+    x[1].forEach(trg => {
+        edges.push({
+            source: src,
+            target: trg,
+            isVisible: true
+        })
+    })
+})
 
 const reachableFromLastClickedNode = new Set();
 const nameToNodeMap = new Map(nodeEntries.map(x => [x.name, x]))
