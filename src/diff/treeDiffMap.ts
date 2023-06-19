@@ -2,8 +2,8 @@ import * as d3 from "d3";
 import {escapeHtml} from "../processing";
 import {DiffTreeMapNode, findHierarchy} from "./processTreeDiff";
 import {colors, createSvg} from "../svgGen";
-import {kotlinDeclarationsSize as sizes2} from "../ir-sizes";
-import {kotlinDeclarationsSize as sizes1} from "../ir-sizes1";
+import {kotlinDeclarationsSize as sizes2} from "../ir-sizes-stdlib-changed";
+import {kotlinDeclarationsSize as sizes1} from "../ir-sizes-stdlib";
 
 const STROKE_SPACE = 4
 

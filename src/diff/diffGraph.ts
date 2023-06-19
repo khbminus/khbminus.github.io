@@ -1,10 +1,29 @@
 import * as d3 from "d3";
 import {SimulationNodeDatum} from "d3";
-import {diffDeclarationsSizes} from "../ir-sizes-diff";
-import {diffReachibilityInfos} from "../dce-graph-diff";
+import {diffDeclarationsSizes} from "./stdlib-diff/ir-sizes";
+import {diffReachibilityInfos} from "./stdlib-diff/dce-graph";
 import {deleteSelfEdges, escapeHtml, IrSizeNode} from "../processing";
 import {createSvg} from "../svgGen";
 
+import {diffMetaNodesInfo} from "./stdlib-diff/metanodes";
+
+const allMetaNodes = new Set(diffMetaNodesInfo.metaNodesList);
+console.log(allMetaNodes);
+const metaNodeData = new Map([...Object.entries(diffMetaNodesInfo.parent)]);
+const visibleVertex = new Set();
+function isMetaNode(v: string): boolean {
+    return allMetaNodes.has(v);
+}
+
+const metaNodesChildren: Map<string, string[]> = new Map();
+
+allMetaNodes.forEach(x => metaNodesChildren.set(x, []));
+
+([...metaNodeData.entries()]).forEach(x => {
+    const name = x[0]
+    const metaNode = x[1];
+    metaNodesChildren.get(metaNode).push(name);
+})
 
 const UNFOCUSED_LINE_STROKE = "#aaa";
 const FOCUSED_LINE_STROKE = "#fbe106"
@@ -29,13 +48,14 @@ const radiusScale = d3
     .range([5, 100]);
 
 const nodeEntries: Node[] = [...irMap.entries()].map(lst => {
-    const r = radiusScale(lst[1].size)
+    const r = radiusScale(Math.abs(lst[1].size))
 
     return {
         "name": lst[0],
         "value": r
     };
 });
+
 const names = new Set(nodeEntries.map(x => x.name));
 
 type EdgeWithVisibility = {
@@ -75,17 +95,26 @@ if (FIX_UNKNOWN_NODES) {
     });
 }
 
-const categories = ["left", "right", "both"],
+const reachableFromLastClickedNode = new Set();
+const nameToNodeMap = new Map(nodeEntries.map(x => [x.name, x]))
+
+const categories = ["function", "property", "field", "anonymousInitializer",
+        "class", "unknown", "left", "right", "both"],
     colorScale = d3.scaleOrdinal() // the scale function
-        .domain(categories) // the data
-        .range(["#d3d3d3", "#2F4F4F", "#808080"]);
+        .domain(categories)
+        .range(['#e06ec1', '#9E999D', '#824e6c', '#347EB4', '#08ACB6', '#91BB91',
+            "#d3d3d3", "#2F4F4F", "#808080"]);
 
 buildLegend();
+nodeEntries.forEach(x => {
+    if (isMetaNode(x.name)) {
+        visibleVertex.add(x.name)
+    }
+})
 
-
-const links = svg
+let links = svg
     .selectAll("line")
-    .data(edges)
+    .data(edges.filter(e => isMetaNode(e.source) && isMetaNode(e.target)))
     .enter()
     .append("line")
     .style("stroke", UNFOCUSED_LINE_STROKE);
@@ -94,9 +123,9 @@ const forceLink = d3.forceLink()
     .id(d => {
         return (d as Node).name;
     })
-    .links([...edges])
+    .links(edges.filter(e => isMetaNode(e.source) && isMetaNode(e.target)))
 
-const simulation = d3.forceSimulation(nodeEntries as SimulationNodeDatum[])
+const simulation = d3.forceSimulation(nodeEntries.filter(isNodeVisible) as SimulationNodeDatum[])
     .force("link", forceLink)
     .force("charge", d3.forceManyBody().strength(-20))
     .force("center", d3.forceCenter(width / 2, height / 2))
@@ -104,9 +133,9 @@ const simulation = d3.forceSimulation(nodeEntries as SimulationNodeDatum[])
         (d as Node).value + 1.5).iterations(2))
     .on("tick", ticked);
 
-const nodes = svg
+let nodes = svg
     .selectAll(".outer-circle")
-    .data(nodeEntries)
+    .data(nodeEntries.filter(x => visibleVertex.has(x.name)))
     .join("circle")
     .style("fill", d => colorScale(irMap.get(d.name).type) as string)
     .style("stroke", "black")
@@ -121,7 +150,7 @@ const nodes = svg
         links.attr("stroke", UNFOCUSED_LINE_STROKE);
         tool.style("display", "none");
     })
-    .on("click", changeLinksOnClick)
+    .on("click", splitNodeOnClick)
     .call(
         // @ts-ignore
         drag(simulation)
@@ -223,7 +252,6 @@ function mousemove(event, d) {
 }
 
 let lastClicked = null;
-const reachableFromLastClickedNode = new Set([...nodeEntries.map(x => x.name)]);
 type NewEdge = {
     source: { name: string },
     target: { name: string },
@@ -292,15 +320,15 @@ function depthFirstSearch(currentNode: string) {
 
 function isEdgeVisible(e: EdgeWithVisibility): boolean {
     // @ts-ignore
-    const source = e.source.name;
+    const source = (e.source.name !== undefined ? e.source.name : e.source);
     // @ts-ignore
-    const target = e.target.name;
+    const target = (e.target.name !== undefined ? e.target.name : e.target);
     return isNodeVisible(source) && isNodeVisible(target) && e.isVisible;
 }
 
 function isNodeVisible(d: Node | string): boolean {
     const name = (typeof d == "string" ? d : d.name);
-    return reachableFromLastClickedNode.has(name);
+    return /*reachableFromLastClickedNode.has(name) &&*/ visibleVertex.has(name);
 }
 
 function buildLegend() {
@@ -380,5 +408,76 @@ function buildLegend() {
     const size = legendInner.node().getBBox();
     legendRect.attr("height", size.height + 10)
         .attr("width", size.width + 10)
+}
 
+function splitNodeOnClick(ev, d) {
+    if (!metaNodesChildren.has(d.name)) {
+        return;
+    }
+    nodes.remove();
+    links.remove();
+    visibleVertex.delete(d.name);
+
+    metaNodesChildren.get(d.name).forEach(x => {
+        const node = nameToNodeMap.get(x);
+        console.log(x, node);
+        // @ts-ignore
+        node.x = d.x;
+        // @ts-ignore
+        node.y = d.y;
+        visibleVertex.add(x);
+    });
+    const nextEdges = edges.filter(e => isEdgeVisible(e))
+    const nextNodes = nodeEntries.filter(isNodeVisible);
+    simulation.nodes(nextNodes as SimulationNodeDatum[]);
+    (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>).links(nextEdges)
+    links = svg
+        .selectAll("link")
+        .data(nextEdges).enter()
+        .append("line")
+        .style("stroke", "#aaa")
+        .attr(
+            "x1",
+            // @ts-ignore
+            d => Math.max(0, Math.min(width, d.source.x)))
+        .attr(
+            "y1",
+            // @ts-ignore
+            d => Math.max(0, Math.min(height, d.source.y))
+        )
+        .attr(
+            "x2",
+            // @ts-ignore
+            d => Math.max(0, Math.min(width, d.target.x))
+        )
+        .attr(
+            "y2",
+            // @ts-ignore
+            d => Math.max(0, Math.min(height, d.target.y))
+        );
+    nodes = svg
+        .selectAll(".outer-circle")
+        .data(nextNodes)
+        .join("circle")
+        .style("fill", d => colorScale(irMap.get(d.name).type) as string)
+        .style("stroke", "black")
+        .style("stroke-width", 0.5)
+        .style("z-index", 0)
+        .attr("class", "outer-circle")
+        .attr("r", (d) => {
+            return d.value;
+        })
+        .on("mousemove", mousemove)
+        .on("mouseout", function (event, d) {
+            links.attr("stroke", UNFOCUSED_LINE_STROKE);
+            tool.style("display", "none");
+        })
+        .on("click", splitNodeOnClick)
+        .call(
+            // @ts-ignore
+            drag(simulation)
+        );
+
+
+    simulation.alpha(1).restart();
 }
