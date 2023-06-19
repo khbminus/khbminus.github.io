@@ -1,11 +1,11 @@
 import * as d3 from "d3";
 import {SimulationNodeDatum} from "d3";
-import {diffDeclarationsSizes} from "./stdlib-diff/ir-sizes";
-import {diffReachibilityInfos} from "./stdlib-diff/dce-graph";
+import {diffDeclarationsSizes} from "./simple-diff/ir-sizes";
+import {diffReachibilityInfos} from "./simple-diff/dce-graph";
 import {deleteSelfEdges, escapeHtml, IrSizeNode} from "../processing";
 import {createSvg} from "../svgGen";
 
-import {diffMetaNodesInfo} from "./stdlib-diff/metanodes";
+import {diffMetaNodesInfo} from "./simple-diff/metanodes";
 
 const allMetaNodes = new Set(diffMetaNodesInfo.metaNodesList);
 console.log(allMetaNodes);
