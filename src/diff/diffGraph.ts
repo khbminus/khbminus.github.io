@@ -503,5 +503,5 @@ function splitNodeOnClick(ev, d) {
         );
 
 
-    simulation.alpha(1).restart();
+    simulation.alpha(0.01).restart();
 }
