@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import {SimulationNodeDatum} from "d3";
+import {SimulationLinkDatum, SimulationNodeDatum} from "d3";
 
 import {deleteSelfEdges, escapeHtml, IrSizeNode} from "../processing";
 import {createSvg} from "../svgGen";
@@ -8,24 +8,10 @@ import {buildTreeView} from "../graph/treeView";
 
 
 const allMetaNodes = new Set(diffMetaNodesInfo.metaNodesList);
-console.log(allMetaNodes);
-// @ts-ignore
-const metaNodeData: Map<string, string> = new Map([...Object.entries(diffMetaNodesInfo.parent)]);
-const visibleVertex: Set<string> = new Set();
 
 function isMetaNode(v: string): boolean {
     return allMetaNodes.has(v);
 }
-
-const metaNodesChildren: Map<string, string[]> = new Map();
-
-allMetaNodes.forEach(x => metaNodesChildren.set(x, []));
-
-([...metaNodeData.entries()]).forEach(x => {
-    const name = x[0]
-    const metaNode = x[1];
-    metaNodesChildren.get(metaNode).push(name);
-})
 
 const UNFOCUSED_LINE_STROKE = "#aaa";
 const FOCUSED_LINE_STROKE = "#fbe106"
@@ -33,10 +19,12 @@ const FIX_UNKNOWN_NODES = true;
 const height = window.innerHeight * 0.95;
 const width = window.innerWidth * 0.8;
 const svg = createSvg(height, width)
+let maxDepth = 3;
 export type Node = { name: string, value: number };
 
 // @ts-ignore
-const irMap: Map<string, IrSizeNode> = new Map(Object.entries(diffDeclarationsSizes));
+const irMap: Map<string, IrSizeNode> = new Map(Object.entries(diffDeclarationsSizes).filter(x => !isMetaNode(x[0])));
+// @ts-ignore
 const sizeValues = [...irMap.entries()]
     .map(x => [x[1].size, x[1].size])
     .reduce((a, b) => [Math.min(a[0], b[0]), Math.max(a[1], b[1])]);
@@ -48,10 +36,9 @@ const radiusScale = d3
         sizeValues.reduce((a, b) => Math.max(a, b))
     ])
     .range([5, 100]);
-
+// @ts-ignore
 const nodeEntries: Node[] = [...irMap.entries()].map(lst => {
     const r = radiusScale(Math.abs(lst[1].size))
-
     return {
         "name": lst[0],
         "value": r
@@ -60,23 +47,40 @@ const nodeEntries: Node[] = [...irMap.entries()].map(lst => {
 
 const names = new Set(nodeEntries.map(x => x.name));
 
-type EdgeWithVisibility = {
-    source: string,
-    target: string,
+class EdgeWithVisibility {
+    source: string | Node
+    target: string | Node
     isVisible: boolean
+
+    constructor(source: string, target: string) {
+        this.source = source;
+        this.target = target;
+        this.isVisible = true;
+    }
+
+    getSourceName() {
+        if (typeof this.source === "string") {
+            return this.source;
+        }
+        return this.source.name;
+    }
+
+    getTargetName() {
+        if (typeof this.target === "string") {
+            return this.target;
+        }
+        return this.target.name;
+    }
 }
 
 // @ts-ignore
-const edges: EdgeWithVisibility[] = deleteSelfEdges(diffReachibilityInfos).map(x => {
-    return {
-        "source": x.source,
-        "target": x.target,
-        "isVisible": true
-    }
-});
+const edges: EdgeWithVisibility[] = deleteSelfEdges(diffReachibilityInfos)
+    .filter(x => !isMetaNode(x.source) && !isMetaNode(x.target))
+    .map(x => {
+        return new EdgeWithVisibility(x.source, x.target)
+    });
 
 if (FIX_UNKNOWN_NODES) {
-
     const pushNewNode = (name) => {
         nodeEntries.push({
             "name": name,
@@ -86,69 +90,50 @@ if (FIX_UNKNOWN_NODES) {
         irMap.set(name, {size: 0, type: "unknown"});
     }
     edges.forEach(e => {
-        if (!names.has(e.source)) {
-            console.log(e.source);
-            pushNewNode(e.source)
+        if (!names.has(e.getSourceName())) {
+            pushNewNode(e.getSourceName())
         }
-        if (!names.has(e.target)) {
-            console.log(e.target);
-            pushNewNode(e.target)
+        if (!names.has(e.getSourceName())) {
+            pushNewNode(e.getTargetName())
         }
     });
 }
-const oldEdges = edges.map(x => ({...x}))
-const newAdjList: Map<string, Set<string>> = new Map();
-oldEdges.forEach(e => {
-    const src = e.source
-    const trg = e.target
-    if (isMetaNode(src)) {
-        return
-    }
-    const arr = (newAdjList.has(src) ? newAdjList.get(src) : new Set<string>());
-    arr.add(metaNodeData.get(trg))
-    newAdjList.set(src, arr);
-});
-([...newAdjList.entries()]).forEach(x => {
-    const src = x[0];
-    x[1].forEach(trg => {
-        edges.push({
-            source: src,
-            target: trg,
-            isVisible: true
-        })
-    })
-})
 const nameToNodeMap = new Map(nodeEntries.map(x => [x.name, x]))
+const clickedStatus = buildTreeView(
+// @ts-ignore
+    new Map([...irMap.entries()].map(x => [x[0], x[1].size])),
+    false,
+    updateGraph
+)
+
+const reachable: Set<string> = new Set();
 
 const categories = ["function", "property", "field", "anonymousInitializer",
-        "class", "unknown", "left", "right", "both"],
+        "class", "unknown"],
     colorScale = d3.scaleOrdinal() // the scale function
         .domain(categories)
-        .range(['#e06ec1', '#9E999D', '#824e6c', '#347EB4', '#08ACB6', '#91BB91',
-            "#d3d3d3", "#2F4F4F", "#808080"]);
+        .range(['#e06ec1', '#9E999D', '#824e6c', '#347EB4', '#08ACB6', '#91BB91']);
 
 buildLegend();
-nodeEntries.forEach(x => {
-    if (isMetaNode(x.name)) {
-        visibleVertex.add(x.name)
-    }
-})
 
-let links = svg
-    .selectAll("line")
-    .data(edges.filter(e => isMetaNode(e.source) && isMetaNode(e.target)))
-    .enter()
-    .append("line")
-    .style("stroke", UNFOCUSED_LINE_STROKE);
+function createLinks(data: EdgeWithVisibility[]) {
+    return svg
+        .selectAll("line")
+        .data(data)
+        .enter()
+        .append("line")
+        .style("stroke", UNFOCUSED_LINE_STROKE);
+}
 
-const forceLink = d3.forceLink()
-    .id(d => {
-        return (d as Node).name;
-    })
-    .links(edges.filter(e => isMetaNode(e.source) && isMetaNode(e.target)))
+let links = createLinks([])
 
 const simulation = d3.forceSimulation(nodeEntries.filter(isNodeVisible) as SimulationNodeDatum[])
-    .force("link", forceLink)
+    .force("link", d3.forceLink()
+        .id(d => {
+            return (d as Node).name;
+        })
+        // @ts-ignore
+        .links(edges.filter(e => isMetaNode(e.getSourceName()) && isMetaNode(e.getTargetName()))))
     .force("charge", d3.forceManyBody().strength(-20))
     .force("center", d3.forceCenter(width / 2, height / 2))
     .force("x", d3.forceX())
@@ -157,7 +142,32 @@ const simulation = d3.forceSimulation(nodeEntries.filter(isNodeVisible) as Simul
         (d as Node).value + 1.5).iterations(2))
     .on("tick", ticked);
 
-let nodes = createNodes(nodeEntries.filter(x => visibleVertex.has(x.name)))
+function createNodes(data: Node[]) {
+    return svg
+        .selectAll(".outer-circle")
+        .data(data)
+        .join("circle")
+        .style("fill", d => colorScale(irMap.get(d.name).type) as string)
+        .style("stroke", "black")
+        .style("stroke-width", 0.5)
+        .style("z-index", 0)
+        .attr("class", "outer-circle")
+        .attr("r", (d) => {
+            return d.value;
+        })
+        .on("mousemove", mousemove)
+        .on("mouseout", function (event, d) {
+            links.attr("stroke", UNFOCUSED_LINE_STROKE);
+            tool.style("display", "none");
+        })
+        .call(
+            // @ts-ignore
+            drag(simulation)
+        );
+}
+
+let nodes = createNodes([])
+
 const promise = new Promise(r => setTimeout(r, 5000)).then(() => simulation.stop());
 const tool = d3.select("body").append("div").attr("class", "toolTip").style("z-index", 2);
 
@@ -249,22 +259,63 @@ function mousemove(event, d) {
     tool.style("left", event.x + 10 + "px")
     tool.style("top", event.y - 20 + "px")
     tool.style("display", "inline-block");
-    console.log(d);
     const radius = (d.name in diffDeclarationsSizes ? diffDeclarationsSizes[d.name].size : 0);
     tool.html(`Name: ${escapeHtml(d.name)}<br>Shallow value (radius): ${radius}`);
 }
 
+const adjacencyList: Map<string, EdgeWithVisibility[]> = new Map();
+// @ts-ignore
+(edges as EdgeWithVisibility[]).forEach(e => {
+    const list = (adjacencyList.has(e.getSourceName()) ? adjacencyList.get(e.getSourceName()) : []);
+    list.push(e);
+    adjacencyList.set(e.getSourceName(), list);
+});
+
+function updateGraph() {
+    nodes.remove();
+    links.remove();
+    // @ts-ignore
+    const startVertexes = [...clickedStatus.entries()].filter(x => x[1]).map(x => x[0])
+    reachable.clear();
+    startVertexes.forEach(x => depthFirstSearch(x, 1));
+    // @ts-ignore
+    const nextNodes = [...reachable].map(x => {
+        console.log(x);
+        return nameToNodeMap.get(x);
+    });
+    const nextLinks = edges.filter(isEdgeVisible);
+    console.log(nextLinks, edges);
+    simulation.nodes(nextNodes as SimulationNodeDatum[]);
+    (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>)
+        .links(nextLinks as SimulationLinkDatum<SimulationNodeDatum>[]);
+    links = createLinks(nextLinks);
+    nodes = createNodes(nextNodes);
+    simulation.alpha(1).restart();
+}
+
+function depthFirstSearch(currentNode: string, depth: number) {
+    reachable.add(currentNode);
+    if (depth + 1 <= maxDepth) {
+        adjacencyList.get(currentNode)?.forEach(edge => {
+            if (!reachable.has(edge.getTargetName())) {
+                depthFirstSearch(edge.getTargetName(), depth + 1);
+            }
+            edge.isVisible = true;
+        });
+    }
+}
+
 function isEdgeVisible(e: EdgeWithVisibility): boolean {
     // @ts-ignore
-    const source = (e.source.name !== undefined ? e.source.name : e.source);
+    const source = e.getSourceName();
     // @ts-ignore
-    const target = (e.target.name !== undefined ? e.target.name : e.target);
+    const target = e.getTargetName();
     return isNodeVisible(source) && isNodeVisible(target) && e.isVisible;
 }
 
 function isNodeVisible(d: Node | string): boolean {
     const name = (typeof d == "string" ? d : d.name);
-    return /*reachableFromLastClickedNode.has(name) &&*/ visibleVertex.has(name);
+    return reachable.has(name);
 }
 
 function buildLegend() {
@@ -319,62 +370,4 @@ function buildLegend() {
     const size = legendInner.node().getBBox();
     legendRect.attr("height", size.height + 10)
         .attr("width", size.width + 10)
-}
-
-function splitNodeOnClick(ev, d) {
-    if (!metaNodesChildren.has(d.name)) {
-        return;
-    }
-    nodes.remove();
-    links.remove();
-    visibleVertex.delete(d.name);
-
-    metaNodesChildren.get(d.name).forEach(x => {
-        const node = nameToNodeMap.get(x);
-        console.log(x, node);
-        // @ts-ignore
-        node.x = d.x;
-        // @ts-ignore
-        node.y = d.y;
-        visibleVertex.add(x);
-    });
-    const nextEdges = edges.filter(e => isEdgeVisible(e))
-    const nextNodes = nodeEntries.filter(isNodeVisible);
-    simulation.nodes(nextNodes as SimulationNodeDatum[]);
-    (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>).links(nextEdges)
-    links = svg
-        .selectAll("link")
-        .data(nextEdges).enter()
-        .append("line")
-        .style("stroke", "#aaa")
-    nodes = createNodes(nextNodes);
-    ticked();
-
-
-    simulation.alpha(0.1).restart();
-}
-
-function createNodes(data: Node[]) {
-    return svg
-        .selectAll(".outer-circle")
-        .data(data)
-        .join("circle")
-        .style("fill", d => colorScale(irMap.get(d.name).type) as string)
-        .style("stroke", "black")
-        .style("stroke-width", 0.5)
-        .style("z-index", 0)
-        .attr("class", "outer-circle")
-        .attr("r", (d) => {
-            return d.value;
-        })
-        .on("mousemove", mousemove)
-        .on("mouseout", function (event, d) {
-            links.attr("stroke", UNFOCUSED_LINE_STROKE);
-            tool.style("display", "none");
-        })
-        .on("click", splitNodeOnClick)
-        .call(
-            // @ts-ignore
-            drag(simulation)
-        );
 }

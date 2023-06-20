@@ -2,7 +2,7 @@ import * as d3 from "d3";
 import {scaleLinear, SimulationNodeDatum} from "d3";
 import {deleteSelfEdges, escapeHtml, IrSizeNode, Node} from "../processing";
 import {colors, createSvg} from "../svgGen";
-import {setOnTableUpdate, visibilityMap} from "./treeView";
+import {buildTreeView} from "./treeView";
 
 
 const UNFOCUSED_LINE_STROKE = "#aaa";
@@ -156,26 +156,29 @@ export function draw(kotlinDeclarationsSize, kotlinReachabilityInfos, kotlinReta
     const promise = new Promise(r => setTimeout(r, 5000)).then(() => simulation.stop());
     const tool = d3.select("body").append("div").attr("class", "toolTip").style("z-index", 2);
 
-    setOnTableUpdate(() => {
-        nodes
-            .style("visibility", d => {
-                return isNodeVisible(d) ? "visible" : "hidden";
-            })
-        innerNodes
-            .style("visibility", d => {
-                return isNodeVisible(d) ? "visible" : "hidden";
-            })
-        links
-            .style("visibility", e => {
-                return isEdgeVisible(e) ? "visible" : "hidden";
-            });
-        (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>)
-            .links(edges.filter(isEdgeVisible));
-        simulation.nodes(
-            nodeEntries.filter(d => isNodeVisible(d)) as SimulationNodeDatum[]
-        );
-        simulation.alpha(0.1).restart();
-    })
+    const visibilityMap = buildTreeView(
+        new Map([...irMap.entries()].map(x => [x[0], x[1].size])),
+        true,
+        () => {
+            nodes
+                .style("visibility", d => {
+                    return isNodeVisible(d) ? "visible" : "hidden";
+                })
+            innerNodes
+                .style("visibility", d => {
+                    return isNodeVisible(d) ? "visible" : "hidden";
+                })
+            links
+                .style("visibility", e => {
+                    return isEdgeVisible(e) ? "visible" : "hidden";
+                });
+            (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>)
+                .links(edges.filter(isEdgeVisible));
+            simulation.nodes(
+                nodeEntries.filter(d => isNodeVisible(d)) as SimulationNodeDatum[]
+            );
+            simulation.alpha(0.1).restart();
+        })
 
     function drag(simulation) {
         function dragstarted(event) {

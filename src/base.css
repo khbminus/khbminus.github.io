@@ -13,7 +13,7 @@
     text-align: center;
 }
 
-.content-svg {
+.content-svg, svg {
     float: left;
 }
 
