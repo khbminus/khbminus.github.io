@@ -20,6 +20,7 @@ const height = window.innerHeight * 0.95;
 const width = window.innerWidth * 0.8;
 const svg = createSvg(height, width)
 let maxDepth = 3;
+let currentEdgeStatus: "forward" | "backward" | "all" = "forward"
 export type Node = { name: string, value: number };
 
 // @ts-ignore
@@ -99,7 +100,8 @@ if (FIX_UNKNOWN_NODES) {
     });
 }
 const nameToNodeMap = new Map(nodeEntries.map(x => [x.name, x]))
-createSelect();
+createDepthSelect();
+createModeSelect();
 const clickedStatus = buildTreeView(
 // @ts-ignore
     new Map([...irMap.entries()].map(x => [x[0], x[1].size])),
@@ -267,15 +269,8 @@ function mousemove(event, d) {
 const adjacencyList: Map<string, EdgeWithVisibility[]> = new Map();
 // @ts-ignore
 
-function pushEdge(e: EdgeWithVisibility) {
-    const list = (adjacencyList.has(e.getSourceName()) ? adjacencyList.get(e.getSourceName()) : []);
-    list.push(e);
-    adjacencyList.set(e.getSourceName(), list);
-}
-(edges as EdgeWithVisibility[]).forEach(e => {
-    pushEdge(e);
-    pushEdge(new EdgeWithVisibility(e.getTargetName(), e.getSourceName()));
-});
+generateEdges();
+
 
 function updateGraph() {
     nodes.remove();
@@ -378,7 +373,7 @@ function buildLegend() {
         .attr("width", size.width + 10)
 }
 
-function createSelect() {
+function createDepthSelect() {
     const div = document.getElementById("tree-view-input");
     const input = document.createElement("input");
     const label = document.createElement("label");
@@ -400,4 +395,43 @@ function createSelect() {
     label.htmlFor = "depth";
     label.textContent = "3";
     div.appendChild(label);
+}
+
+function generateEdges() {
+    adjacencyList.clear();
+    function pushEdge(e: EdgeWithVisibility) {
+        const list = (adjacencyList.has(e.getSourceName()) ? adjacencyList.get(e.getSourceName()) : []);
+        list.push(e);
+        adjacencyList.set(e.getSourceName(), list);
+    }
+
+    (edges as EdgeWithVisibility[]).forEach(e => {
+        if (currentEdgeStatus === "forward" || currentEdgeStatus == "all") {
+            pushEdge(e);
+        }
+        if (currentEdgeStatus == "backward" || currentEdgeStatus == "all") {
+            pushEdge(new EdgeWithVisibility(e.getTargetName(), e.getSourceName()));
+        }
+    });
+}
+
+function createModeSelect() {
+    const select = document.createElement("select");
+    select.innerHTML = `
+  <option value="forward">Traverse edges forward</option>
+  <option value="backward">Traverse edges backward</option>
+  <option value="all">Traverse edges forward and backward</option>`
+    select.id = "viewMode";
+    select.name = "viewMode";
+    select.oninput = (ev) => {
+        const x = (ev.currentTarget as HTMLSelectElement).value;
+        if (x != "forward" && x != "backward" && x != "all") {
+            alert("Invalid select option");
+        }
+        // @ts-ignore
+        currentEdgeStatus = x;
+        generateEdges();
+        updateGraph();
+    }
+    document.getElementById("tree-view-select").appendChild(select);
 }
