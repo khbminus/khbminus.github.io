@@ -5,6 +5,7 @@ import {deleteSelfEdges, escapeHtml, IrSizeNode} from "../processing";
 import {createSvg} from "../svgGen";
 import {diffDeclarationsSizes, diffMetaNodesInfo, diffReachibilityInfos} from "./commonDiffResources";
 import {buildTreeView} from "../graph/treeView";
+import {Queue} from "queue-typescript";
 
 
 const allMetaNodes = new Set(diffMetaNodesInfo.metaNodesList);
@@ -278,14 +279,14 @@ function updateGraph() {
     // @ts-ignore
     const startVertexes = [...clickedStatus.entries()].filter(x => x[1]).map(x => x[0])
     reachable.clear();
-    startVertexes.forEach(x => depthFirstSearch(x, 1));
+    breathFirstSearch(startVertexes);
+    console.log(reachable);
     // @ts-ignore
     const nextNodes = [...reachable].map(x => {
         console.log(x);
         return nameToNodeMap.get(x);
     });
     const nextLinks = edges.filter(isEdgeVisible);
-    console.log(nextLinks, edges);
     simulation.nodes(nextNodes as SimulationNodeDatum[]);
     (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>)
         .links(nextLinks as SimulationLinkDatum<SimulationNodeDatum>[]);
@@ -294,15 +295,34 @@ function updateGraph() {
     simulation.alpha(1).restart();
 }
 
-function depthFirstSearch(currentNode: string, depth: number) {
-    reachable.add(currentNode);
-    if (depth + 1 <= maxDepth) {
-        adjacencyList.get(currentNode)?.forEach(edge => {
-            if (!reachable.has(edge.getTargetName())) {
-                depthFirstSearch(edge.getTargetName(), depth + 1);
+function breathFirstSearch(startVertexes: string[]) {
+    const dist = new Map<string, number>();
+    const queue = new Queue<string>();
+    startVertexes.forEach(x => {
+        dist.set(x, 0);
+        queue.enqueue(x);
+    })
+    while (queue.length !== 0) {
+        const v = queue.dequeue();
+        if (reachable.has(v)) {
+            continue;
+        }
+        reachable.add(v);
+        const d = dist.get(v);
+        if (d + 1 >= maxDepth) {
+            continue;
+        }
+        if (!adjacencyList.has(v)) {
+            continue;
+        }
+        adjacencyList.get(v).forEach(x => {
+            const next = x.getTargetName();
+            const dNext = (dist.has(next) ? dist.get(next) : Infinity);
+            if (dNext > d + 1) {
+                dist.set(next, d + 1);
+                queue.enqueue(next);
             }
-            edge.isVisible = true;
-        });
+        })
     }
 }
 
@@ -388,6 +408,7 @@ function createDepthSelect() {
     input.valueAsNumber = 3;
     input.oninput = (ev) => {
         maxDepth = (ev.currentTarget as HTMLInputElement).valueAsNumber;
+        console.log(maxDepth);
         label.textContent = maxDepth.toString();
         updateGraph();
     }

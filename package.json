@@ -11,8 +11,7 @@
     "d3": "^7.8.5",
     "d3-force": "^3.0.0",
     "d3-hierarchy": "^3.1.2",
-    "d3-svg-legend": "^1.13.0",
-    "gojs": "^2.3.8"
+    "queue-typescript": "^1.0.1"
   },
   "scripts": {
     "start": "run-p -l type-check:watch start:dev",
