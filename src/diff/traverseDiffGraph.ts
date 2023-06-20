@@ -99,6 +99,7 @@ if (FIX_UNKNOWN_NODES) {
     });
 }
 const nameToNodeMap = new Map(nodeEntries.map(x => [x.name, x]))
+createSelect();
 const clickedStatus = buildTreeView(
 // @ts-ignore
     new Map([...irMap.entries()].map(x => [x[0], x[1].size])),
@@ -265,10 +266,15 @@ function mousemove(event, d) {
 
 const adjacencyList: Map<string, EdgeWithVisibility[]> = new Map();
 // @ts-ignore
-(edges as EdgeWithVisibility[]).forEach(e => {
+
+function pushEdge(e: EdgeWithVisibility) {
     const list = (adjacencyList.has(e.getSourceName()) ? adjacencyList.get(e.getSourceName()) : []);
     list.push(e);
     adjacencyList.set(e.getSourceName(), list);
+}
+(edges as EdgeWithVisibility[]).forEach(e => {
+    pushEdge(e);
+    pushEdge(new EdgeWithVisibility(e.getTargetName(), e.getSourceName()));
 });
 
 function updateGraph() {
@@ -370,4 +376,28 @@ function buildLegend() {
     const size = legendInner.node().getBBox();
     legendRect.attr("height", size.height + 10)
         .attr("width", size.width + 10)
+}
+
+function createSelect() {
+    const div = document.getElementById("tree-view-input");
+    const input = document.createElement("input");
+    const label = document.createElement("label");
+    const p = document.createElement("p");
+    p.textContent = "Maximum depth";
+    div.appendChild(p);
+    input.type = "range";
+    input.min = "1";
+    input.max = "20";
+    input.id = "depth";
+    input.name = "depth";
+    input.valueAsNumber = 3;
+    input.oninput = (ev) => {
+        maxDepth = (ev.currentTarget as HTMLInputElement).valueAsNumber;
+        label.textContent = maxDepth.toString();
+        updateGraph();
+    }
+    div.appendChild(input);
+    label.htmlFor = "depth";
+    label.textContent = "3";
+    div.appendChild(label);
 }
