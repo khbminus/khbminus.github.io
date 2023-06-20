@@ -22,27 +22,34 @@ export function findHierarchy(
     depth: number,
     name: string,
     oldValues: Map<string, number>,
-    newValues: Map<string, number>
+    newValues: Map<string, number>,
+    includeNotChanged: boolean
 ): DiffTreeMapNode {
     const leafs: DiffTreeMapNode[] = strings.filter(x => findNumberOfDots(x) == depth).map(x => {
         const oldValue = (oldValues.has(x) ? oldValues.get(x) : 0);
         const newValue = (newValues.has(x) ? newValues.get(x) : 0);
         const value = Math.max(oldValue, newValue) - Math.abs(oldValue - newValue);
+        const children: DiffTreeMapNode[] = (includeNotChanged ? [{
+            name: x,
+            value: Math.abs(oldValue - newValue),
+            category: (newValue > oldValue ? "diff-pos" : "diff-neg"),
+            children: []
+        }, {
+            name: x,
+            value: value,
+            category: "regular",
+            children: []
+        }] : [{
+            name: x,
+            value: Math.abs(oldValue - newValue),
+            category: (newValue > oldValue ? "diff-pos" : "diff-neg"),
+            children: []
+        }]);
         return {
             name: x,
             value: 0,
             category: "middle",
-            children: [{
-                name: x,
-                value: Math.abs(oldValue - newValue),
-                category: (newValue > oldValue ? "diff-pos" : "diff-neg"),
-                children: []
-            }, {
-                name: x,
-                value: value,
-                category: "regular",
-                children: []
-            }]
+            children: children
         };
     });
 
@@ -54,7 +61,8 @@ export function findHierarchy(
             depth + 1,
             element,
             oldValues,
-            newValues
+            newValues,
+            includeNotChanged
         );
         leafs.push(newLeaf);
     });

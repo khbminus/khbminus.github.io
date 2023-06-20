@@ -1,11 +1,11 @@
 import * as d3 from "d3";
 import {SimulationNodeDatum} from "d3";
-import {diffDeclarationsSizes} from "./simple-diff/ir-sizes";
-import {diffReachibilityInfos} from "./simple-diff/dce-graph";
+import {diffDeclarationsSizes} from "./stdlib-diff/ir-sizes";
+import {diffReachibilityInfos} from "./stdlib-diff/dce-graph";
 import {deleteSelfEdges, escapeHtml, IrSizeNode} from "../processing";
 import {createSvg} from "../svgGen";
 
-import {diffMetaNodesInfo} from "./simple-diff/metanodes";
+import {diffMetaNodesInfo} from "./stdlib-diff/metanodes";
 
 const allMetaNodes = new Set(diffMetaNodesInfo.metaNodesList);
 console.log(allMetaNodes);
@@ -153,6 +153,8 @@ const simulation = d3.forceSimulation(nodeEntries.filter(isNodeVisible) as Simul
     .force("link", forceLink)
     .force("charge", d3.forceManyBody().strength(-20))
     .force("center", d3.forceCenter(width / 2, height / 2))
+    .force("x", d3.forceX())
+    .force("y", d3.forceY())
     .force("collide", d3.forceCollide().radius(d =>
         (d as Node).value + 1.5).iterations(2))
     .on("tick", ticked);
@@ -503,5 +505,5 @@ function splitNodeOnClick(ev, d) {
         );
 
 
-    simulation.alpha(0.01).restart();
+    simulation.alpha(0.1).restart();
 }
