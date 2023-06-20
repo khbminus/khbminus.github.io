@@ -26,7 +26,8 @@
 
 #tree-view-content {
     height: 95vh;
-    overflow: auto;
+    overflow-x: clip;
+    overflow-y: auto;
 }
 input {
     width: 100%;
