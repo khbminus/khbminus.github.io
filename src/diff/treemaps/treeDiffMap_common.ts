@@ -9,12 +9,14 @@ const STROKE_SPACE = 4
 export function buildDiffMap(irMap1: Map<string, number>, irMap2: Map<string, number>, includeNotChanged: boolean) {
     let keys: Set<string> = new Set([...irMap1.keys(), ...irMap2.keys()]);
 
-    buildTreeView(new Map([...keys].map(x => [x, 0])), true, (name, state) => {
-        if (state) {
-            keys.add(name);
-        } else {
-            keys.delete(name);
-        }
+    buildTreeView(new Map([...keys].map(x => [x, 0])), true, (names, state) => {
+        names.forEach(name => {
+            if (state) {
+                keys.add(name);
+            } else {
+                keys.delete(name);
+            }
+        });
         svg.selectAll("text").remove();
         svg.selectAll("rect").remove();
         redraw();

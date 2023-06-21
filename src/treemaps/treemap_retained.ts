@@ -20,7 +20,7 @@ const svg = createSvg(height, width)
 const patterns = d3.select("svg").append("defs");
 const gradients = new Map([...colors.keys()].map(i => {
     const color = colors[((i - 1) % colors.length + colors.length) % colors.length];
-    const id =  color.replace("#", "");
+    const id = color.replace("#", "");
     patterns
         .append("pattern")
         .attr("id", color.replace("#", ""))
@@ -48,9 +48,11 @@ function getHierarchy(map1: Map<string, number>, map2: Map<string, number>, topC
 const hierarchyObj = getHierarchy(irMap, irShallowMap, "retained");
 buildTreeMap(hierarchyObj);
 buildTreeView(irMap, true, onTableUpdate);
+
 function invertHex(hex) {
     return (Number(`0x1${hex}`) ^ 0xFFFFFF).toString(16).substr(1).toUpperCase()
 }
+
 function buildTreeMap(data: TreeMapNode) {
     const hierarchy = d3
         .hierarchy(data)
@@ -123,6 +125,7 @@ function buildTreeMap(data: TreeMapNode) {
 
 const select = document.getElementById("viewMode") as HTMLSelectElement
 select.oninput = updateHierarchy;
+
 function updateHierarchy() {
     const value = select.value;
     console.log(value);
@@ -144,14 +147,16 @@ function updateHierarchy() {
     buildTreeMap(data);
 }
 
-function onTableUpdate(name: string, state: boolean) {
-    if (!state) {
-        keys.delete(name);
-        console.log(`${name} deleted`);
-    } else {
-        keys.add(name);
-        console.log(`${name} added`);
-    }
+function onTableUpdate(names: string[], state: boolean) {
+    names.forEach(name => {
+        if (!state) {
+            keys.delete(name);
+            console.log(`${name} deleted`);
+        } else {
+            keys.add(name);
+            console.log(`${name} added`);
+        }
+    });
     updateHierarchy();
 }
 
