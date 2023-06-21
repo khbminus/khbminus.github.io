@@ -3,7 +3,7 @@ import {SimulationLinkDatum, SimulationNodeDatum} from "d3";
 
 import {deleteSelfEdges, escapeHtml, IrSizeNode} from "../processing";
 import {createSvg} from "../svgGen";
-import {diffDeclarationsSizes, diffMetaNodesInfo, diffReachibilityInfos} from "./commonDiffResources";
+import {diffDeclarationsDifference, diffMetaNodesInfo, diffReachibilityInfos} from "./commonDiffResources";
 import {buildTreeView} from "../graph/treeView";
 import {Queue} from "queue-typescript";
 
@@ -25,7 +25,7 @@ let currentEdgeStatus: "forward" | "backward" | "all" = "forward"
 export type Node = { name: string, value: number };
 
 // @ts-ignore
-const irMap: Map<string, IrSizeNode> = new Map(Object.entries(diffDeclarationsSizes).filter(x => !isMetaNode(x[0])));
+const irMap: Map<string, IrSizeNode> = new Map(Object.entries(diffDeclarationsDifference).filter(x => !isMetaNode(x[0])));
 // @ts-ignore
 const sizeValues = [...irMap.entries()]
     .map(x => [x[1].size, x[1].size])
@@ -263,7 +263,7 @@ function mousemove(event, d) {
     tool.style("left", event.x + 10 + "px")
     tool.style("top", event.y - 20 + "px")
     tool.style("display", "inline-block");
-    const radius = (d.name in diffDeclarationsSizes ? diffDeclarationsSizes[d.name].size : 0);
+    const radius = (d.name in diffDeclarationsDifference ? diffDeclarationsDifference[d.name].size : 0);
     tool.html(`Name: ${escapeHtml(d.name)}<br>Shallow value (radius): ${radius}`);
 }
 
