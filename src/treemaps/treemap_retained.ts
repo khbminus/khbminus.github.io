@@ -3,6 +3,7 @@ import {kotlinRetainedSize} from "../retained-size";
 import {escapeHtml, findHierarchy, TreeMapCategory, TreeMapNode} from "../processing";
 import {colors, createSvg} from "../svgGen";
 import {kotlinDeclarationsSize} from "../ir-sizes";
+import {buildTreeView} from "../graph/treeView";
 
 let rects = null
 let titles = null
@@ -12,9 +13,9 @@ const STROKE_SPACE = 4
 const irMap = new Map(Object.entries(kotlinRetainedSize));
 const irShallowMap = new Map(Object.entries(kotlinDeclarationsSize).map(x => [x[0], x[1].size]));
 
-const keys = [...irMap.keys()];
-const height = window.innerHeight * 0.985;
-const width = window.innerWidth * 0.98;
+let keys = new Set([...irMap.keys()]);
+const height = window.innerHeight * 0.97;
+const width = window.innerWidth * 0.8;
 const svg = createSvg(height, width)
 const patterns = d3.select("svg").append("defs");
 const gradients = new Map([...colors.keys()].map(i => {
@@ -41,11 +42,12 @@ const gradients = new Map([...colors.keys()].map(i => {
 let paintGradients = true
 
 function getHierarchy(map1: Map<string, number>, map2: Map<string, number>, topCategory: TreeMapCategory) {
-    return findHierarchy(keys, 0, "Kotlin IR", map1, map2, topCategory);
+    return findHierarchy([...keys], 0, "Kotlin IR", map1, map2, topCategory);
 }
 
 const hierarchyObj = getHierarchy(irMap, irShallowMap, "retained");
-buildTreeMap(hierarchyObj)
+buildTreeMap(hierarchyObj);
+buildTreeView(irMap, true, onTableUpdate);
 function invertHex(hex) {
     return (Number(`0x1${hex}`) ^ 0xFFFFFF).toString(16).substr(1).toUpperCase()
 }
@@ -119,8 +121,10 @@ function buildTreeMap(data: TreeMapNode) {
     const tool = d3.select("body").append("div").attr("class", "toolTip");
 }
 
-document.getElementById("viewMode").oninput = (ev) => {
-    const value = (ev.currentTarget as HTMLSelectElement).value;
+const select = document.getElementById("viewMode") as HTMLSelectElement
+select.oninput = updateHierarchy;
+function updateHierarchy() {
+    const value = select.value;
     console.log(value);
     if (!isCategory(value)) return;
     console.log(rects, titles);
@@ -138,6 +142,17 @@ document.getElementById("viewMode").oninput = (ev) => {
         data = getHierarchy(irMap, irShallowMap, "retained");
     }
     buildTreeMap(data);
+}
+
+function onTableUpdate(name: string, state: boolean) {
+    if (!state) {
+        keys.delete(name);
+        console.log(`${name} deleted`);
+    } else {
+        keys.add(name);
+        console.log(`${name} added`);
+    }
+    updateHierarchy();
 }
 
 function isCategory(x: string): x is TreeMapCategory {

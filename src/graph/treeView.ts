@@ -1,7 +1,7 @@
 const tableDiv = document.getElementById("tree-view-content");
 let table: HTMLTableElement = null
 
-export function buildTreeView(irMap: Map<string, number>, defaultValue: boolean, onTableUpdate: () => void) {
+export function buildTreeView(irMap: Map<string, number>, defaultValue: boolean, onTableUpdate: (string, boolean) => void) {
 
     const entries = [...irMap.entries()];
     const visibilityMap = new Map(entries.map(x => {
@@ -28,7 +28,7 @@ export function buildTreeView(irMap: Map<string, number>, defaultValue: boolean,
         const name = row.cells[1].textContent;
         visibilityMap.set(name, input.checked);
         if (onTableUpdate !== null) {
-            onTableUpdate();
+            onTableUpdate(name, input.checked);
         }
     }
 
