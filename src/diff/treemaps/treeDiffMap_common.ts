@@ -1,7 +1,8 @@
-import {colors, createSvg} from "../svgGen";
+import {colors, createSvg} from "../../svgGen";
 import * as d3 from "d3";
 import {DiffTreeMapNode, findHierarchy} from "./processTreeDiff";
-import {escapeHtml} from "../processing";
+import {escapeHtml} from "../../processing";
+import {irMap1, irMap2} from "../commonDiffResources";
 
 const STROKE_SPACE = 4
 
@@ -160,4 +161,30 @@ export function buildDiffMap(irMap1: Map<string, number>, irMap2: Map<string, nu
         }
         return `url(#${plusGradients.get(color)})`
     }
+}
+
+export function buildAdded(irMap1, irMap2) {
+    const keys = new Set(([...irMap2.keys()]).filter(x => {
+        const irMap1Value = (irMap1.has(x) ? irMap1.get(x) : 0);
+        return irMap2.get(x) > irMap1Value;
+    }));
+
+    buildDiffMap(
+        new Map(([...irMap1.entries()]).filter(x => keys.has(x[0]))),
+        new Map(([...irMap2.entries()]).filter(x => keys.has(x[0]))),
+        false
+    )
+}
+
+export function buildDeleted(irMap1, irMap2) {
+    const keys = new Set(([...irMap1.keys()]).filter(x => {
+        const irMap2Value = (irMap2.has(x) ? irMap2.get(x) : 0);
+        return irMap1.get(x) > irMap2Value;
+    }));
+
+    buildDiffMap(
+        new Map(([...irMap1.entries()]).filter(x => keys.has(x[0]))),
+        new Map(([...irMap2.entries()]).filter(x => keys.has(x[0]))),
+        false
+    )
 }

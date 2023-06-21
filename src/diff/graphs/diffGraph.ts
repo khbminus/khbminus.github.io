@@ -1,10 +1,9 @@
 import * as d3 from "d3";
 import {SimulationNodeDatum} from "d3";
 
-import {deleteSelfEdges, escapeHtml, IrSizeNode} from "../processing";
-import {createSvg} from "../svgGen";
-import {diffDeclarationsSizes, diffMetaNodesInfo, diffReachibilityInfos} from "./commonDiffResources";
-import {buildTreeView} from "../graph/treeView";
+import {deleteSelfEdges, escapeHtml, IrSizeNode} from "../../processing";
+import {createSvg} from "../../svgGen";
+import {diffDeclarationsSizes, diffMetaNodesInfo, diffReachibilityInfos} from "../commonDiffResources";
 
 
 const allMetaNodes = new Set(diffMetaNodesInfo.metaNodesList);
