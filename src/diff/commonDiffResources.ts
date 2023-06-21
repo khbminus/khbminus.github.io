@@ -1,5 +1,5 @@
-import {kotlinDeclarationsSize as sizes2} from "../ir-sizes-stdlib";
-import {kotlinDeclarationsSize as sizes1} from "../ir-sizes-stdlib-changed";
+import {kotlinDeclarationsSize as sizes2} from "../ir-sizes1";
+import {kotlinDeclarationsSize as sizes1} from "../ir-sizes";
 
 import {kotlinRetainedSize as rsz1} from "../ir-sizes-stdlib-retained";
 import {kotlinRetainedSize as rsz2} from "../ir-sizes-stdlib-changed-retained";
