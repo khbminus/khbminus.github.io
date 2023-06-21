@@ -9,20 +9,37 @@ function findNumberOfDots(string: String): number {
     return cnt;
 }
 
+export type TreeMapCategory = "retained" | "shallow" | "middle";
+
 export type TreeMapNode = {
     name: string,
     children: TreeMapNode[],
-    category: "retained" | "shallow" | "middle",
+    category: TreeMapCategory,
     value: number
 }
 
-export function findHierarchy(strings: Array<string>, depth: number, name: string, values: Map<string, number>, shallowValues: Map<string, number>): TreeMapNode {
+export function findHierarchy(
+    strings: Array<string>,
+    depth: number,
+    name: string,
+    values: Map<string, number>,
+    shallowValues: Map<string, number> = null,
+    topCategory: TreeMapCategory
+): TreeMapNode {
     const leafs: TreeMapNode[] = strings.filter(x => findNumberOfDots(x) == depth).map(x => {
+        if (shallowValues != null) {
+            return {
+                name: x,
+                value: values.get(x),
+                category: "retained",
+                children: [{name: x, value: shallowValues.get(x), category: "shallow", children: []}]
+            };
+        }
         return {
             name: x,
             value: values.get(x),
-            category: "retained",
-            children: [{name: x, value: shallowValues.get(x), category: "shallow", children: []}]
+            category: topCategory,
+            children: []
         };
     });
 
@@ -34,7 +51,8 @@ export function findHierarchy(strings: Array<string>, depth: number, name: strin
             depth + 1,
             element,
             values,
-            shallowValues
+            shallowValues,
+            topCategory
         );
         leafs.push(newLeaf);
     });
