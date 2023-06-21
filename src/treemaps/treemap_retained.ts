@@ -4,6 +4,7 @@ import {escapeHtml, findHierarchy, TreeMapCategory, TreeMapNode} from "../proces
 import {colors, createSvg} from "../svgGen";
 import {kotlinDeclarationsSize} from "../ir-sizes";
 import {buildTreeView} from "../graph/treeView";
+import {createGradients, height, keys, width} from "./resources";
 
 let rects = null
 let titles = null
@@ -13,31 +14,10 @@ const STROKE_SPACE = 4
 const irMap = new Map(Object.entries(kotlinRetainedSize));
 const irShallowMap = new Map(Object.entries(kotlinDeclarationsSize).map(x => [x[0], x[1].size]));
 
-let keys = new Set([...irMap.keys()]);
-const height = window.innerHeight * 0.97;
-const width = window.innerWidth * 0.8;
+
 const svg = createSvg(height, width)
 const patterns = d3.select("svg").append("defs");
-const gradients = new Map([...colors.keys()].map(i => {
-    const color = colors[((i - 1) % colors.length + colors.length) % colors.length];
-    const id = color.replace("#", "");
-    patterns
-        .append("pattern")
-        .attr("id", color.replace("#", ""))
-        .attr("patternUnits", "userSpaceOnUse")
-        .attr("width", STROKE_SPACE + .5)
-        .attr("height", STROKE_SPACE + .5)
-        .attr("patternTransform", "rotate(45)")
-        .style("background", color)
-        .append("line")
-        .attr("x1", 0)
-        .attr("y1", 0)
-        .attr("x2", 0)
-        .attr("y2", STROKE_SPACE + 0.5)
-        .attr("stroke", `#${invertHex(id)}`)
-        .attr("stroke-width", 3)
-    return [colors[i], id]
-}));
+const gradients = createGradients(patterns);
 
 let paintGradients = true
 
@@ -49,9 +29,6 @@ const hierarchyObj = getHierarchy(irMap, irShallowMap, "retained");
 buildTreeMap(hierarchyObj);
 buildTreeView(irMap, true, onTableUpdate);
 
-function invertHex(hex) {
-    return (Number(`0x1${hex}`) ^ 0xFFFFFF).toString(16).substr(1).toUpperCase()
-}
 
 function buildTreeMap(data: TreeMapNode) {
     const hierarchy = d3
