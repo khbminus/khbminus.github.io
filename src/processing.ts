@@ -35,7 +35,7 @@ export function findHierarchy(
                     value: 0,
                     category: "middle",
                     children: [{name: `${x} (retained)`, value: values.get(x) - shallowValues.get(x), category: "retained",
-                        children: [{name: x, value: shallowValues.get(x), category: "shallow", children: []}]}]
+                        children: [{name: "shallow size", value: shallowValues.get(x), category: "shallow", children: []}]}]
                 }
             }
             return {
