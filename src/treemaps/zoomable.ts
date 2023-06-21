@@ -3,7 +3,7 @@ import {HierarchyRectangularNode} from "d3";
 import {createSvg} from "../svgGen";
 import {getId, height, irMap, irShallowMap, keys, width} from "./resources";
 import {buildTreeView} from "../graph/treeView";
-import {escapeHtml, findHierarchy, TreeMapCategory, TreeMapNode} from "../processing";
+import {findHierarchy, TreeMapCategory, TreeMapNode} from "../processing";
 
 const STROKE_SPACE = 4
 const name = d => d.ancestors().reverse().map(d => d.data.name).join("/")
@@ -24,7 +24,8 @@ buildTreeView(irMap, true, () => {
 const data = getHierarchy(irMap, irShallowMap, "retained");
 const hierarchy = d3
     .hierarchy(data)
-    .sum((d: any) => d.value)
+    // .sum(d => (d.category === "shallow" ? 0 : d.value));
+    .sum(d => d.value);
 hierarchy.children.sort((a, b) => b.value - a.value)
 
 const root = treemap(hierarchy);
@@ -40,6 +41,7 @@ function render(group: d3.Selection<SVGGElement, any, HTMLElement, any>, root: H
         .data(root.children.concat(root))
         .join("g");
 
+    // @ts-ignore
     node.filter(d => d === root ? d.parent : d.children)
         .attr("cursor", "pointer")
         .on("click", (event, d) => d === root ? zoomout(root) : zoomin(d));
@@ -53,7 +55,18 @@ function render(group: d3.Selection<SVGGElement, any, HTMLElement, any>, root: H
             // @ts-ignore
             return (d.leafUid = `leaf${getId()}`)
         })
-        .attr("fill", d => d === root ? "#fff" : d.children ? "#ccc" : "#ddd")
+        .attr("fill", d => {
+            if (d === root) {
+                return "#fff";
+            }
+            if (d.data.category === "retained") {
+                return "#56B870";
+            }
+            if (d.children) {
+                return "#ccc";
+            }
+            return "#347EB4";
+        })
         .attr("stroke", "#fff");
 
 
@@ -144,8 +157,7 @@ function tile(node, x0, y0, x1, y1) {
 
 function getHierarchy(irMap: Map<string, number>, irMap2: Map<string, number>, topCategory: TreeMapCategory) {
     // @ts-ignore
-    const data = findHierarchy([...keys], 0, "Kotlin IR", irMap, irMap2, topCategory);
-    return data;
+    return findHierarchy([...keys], 0, "Kotlin IR", irMap, irMap2, topCategory, true);
 }
 
 

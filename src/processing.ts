@@ -24,13 +24,23 @@ export function findHierarchy(
     name: string,
     values: Map<string, number>,
     shallowValues: Map<string, number> = null,
-    topCategory: TreeMapCategory
+    topCategory: TreeMapCategory,
+    forZoomable: boolean = false
 ): TreeMapNode {
     const leafs: TreeMapNode[] = strings.filter(x => findNumberOfDots(x) == depth).map(x => {
         if (shallowValues != null) {
+            if (forZoomable) {
+                return {
+                    name: x,
+                    value: 0,
+                    category: "middle",
+                    children: [{name: `${x} (retained)`, value: values.get(x) - shallowValues.get(x), category: "retained",
+                        children: [{name: x, value: shallowValues.get(x), category: "shallow", children: []}]}]
+                }
+            }
             return {
                 name: x,
-                value: values.get(x),
+                value: values.get(x) - shallowValues.get(x),
                 category: "retained",
                 children: [{name: x, value: shallowValues.get(x), category: "shallow", children: []}]
             };
@@ -52,7 +62,8 @@ export function findHierarchy(
             element,
             values,
             shallowValues,
-            topCategory
+            topCategory,
+            forZoomable
         );
         leafs.push(newLeaf);
     });
