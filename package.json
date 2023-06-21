@@ -19,7 +19,7 @@
     "type-check:watch": "npm run type-check -- --watch",
     "start:dev": "parcel src/index.html",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "parcel build ./src/index.html",
+    "build": "parcel build --no-scope-hoist ./src/index.html",
     "push-gh-pages": "push-dir --dir=dist --branch=gh-pages --cleanup --verbose"
   }
 }
