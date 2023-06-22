@@ -4,7 +4,7 @@ import {escapeHtml, findHierarchy, TreeMapCategory, TreeMapNode} from "../proces
 import {colors, createSvg} from "../svgGen";
 import {kotlinDeclarationsSize} from "../ir-sizes";
 import {buildTreeView} from "../graph/treeView";
-import {createGradients, height, keys, width} from "./resources";
+import {buildOnTableUpdate, createGradients, height, isCategory, keys, updateHierarchy, width} from "./resources";
 
 let rects = null
 let titles = null
@@ -20,26 +20,20 @@ const patterns = d3.select("svg").append("defs");
 const gradients = createGradients(patterns);
 
 let paintGradients = true
+const treemap = d3.treemap()
+    .size([width, height])
+    .paddingInner(3);
 
 function getHierarchy(map1: Map<string, number>, map2: Map<string, number>, topCategory: TreeMapCategory) {
     return findHierarchy([...keys], 0, "Kotlin IR", map1, map2, topCategory);
 }
+const update = updateHierarchy(false, buildTreeMap);
+update();
+buildTreeView(irMap, true, buildOnTableUpdate(update));
 
-const hierarchyObj = getHierarchy(irMap, irShallowMap, "retained");
-buildTreeMap(hierarchyObj);
-buildTreeView(irMap, true, onTableUpdate);
 
+function buildTreeMap(hierarchy: d3.HierarchyNode<TreeMapNode>) {
 
-function buildTreeMap(data: TreeMapNode) {
-    const hierarchy = d3
-        .hierarchy(data)
-        .sum((d: any) => d.value)
-    hierarchy.children.sort((a, b) => b.value - a.value)
-    const treemap = d3.treemap()
-        .size([width, height])
-        // .paddingTop(28)
-        // .paddingRight(10)
-        .paddingInner(3);
 
     const root = treemap(hierarchy);
     const colorScale = (d: d3.HierarchyRectangularNode<any>) => colors[d.depth];
@@ -101,42 +95,5 @@ function buildTreeMap(data: TreeMapNode) {
 }
 
 const select = document.getElementById("viewMode") as HTMLSelectElement
-select.oninput = updateHierarchy;
+select.oninput = update;
 
-function updateHierarchy() {
-    const value = select.value;
-    console.log(value);
-    if (!isCategory(value)) return;
-    console.log(rects, titles);
-    svg.selectAll("rect").remove();
-    svg.selectAll("text").remove();
-
-    let data = null
-    paintGradients = true;
-    if (value === "retained") {
-        data = getHierarchy(irMap, null, "retained");
-    } else if (value === "shallow") {
-        data = getHierarchy(irShallowMap, null, "shallow");
-        paintGradients = false;
-    } else {
-        data = getHierarchy(irMap, irShallowMap, "retained");
-    }
-    buildTreeMap(data);
-}
-
-function onTableUpdate(names: string[], state: boolean) {
-    names.forEach(name => {
-        if (!state) {
-            keys.delete(name);
-            console.log(`${name} deleted`);
-        } else {
-            keys.add(name);
-            console.log(`${name} added`);
-        }
-    });
-    updateHierarchy();
-}
-
-function isCategory(x: string): x is TreeMapCategory {
-    return x === "retained" || x === "shallow" || x == "middle";
-}

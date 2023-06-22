@@ -1,6 +1,8 @@
 import {kotlinRetainedSize} from "../retained-size";
 import {kotlinDeclarationsSize} from "../ir-sizes";
 import {colors} from "../svgGen";
+import {findHierarchy, TreeMapCategory, TreeMapNode} from "../processing";
+import * as d3 from "d3";
 
 export const STROKE_SPACE = 4
 
@@ -9,6 +11,7 @@ export const irShallowMap = new Map(Object.entries(kotlinDeclarationsSize).map(x
 export const height = window.innerHeight * 0.97;
 export const width = window.innerWidth * 0.8;
 export let keys = new Set([...irMap.keys()]);
+export let paintGradients = true;
 
 export function createGradients(patterns) {
     return new Map([...colors.keys()].map(i => {
@@ -40,4 +43,52 @@ function invertHex(hex) {
 let counter = 0
 export function getId(): string {
     return `${counter++}`
+}
+
+export function isCategory(x: string): x is TreeMapCategory {
+    return x === "retained" || x === "shallow" || x == "middle";
+}
+
+function getHierarchy(irMap: Map<string, number>, irMap2: Map<string, number>, topCategory: TreeMapCategory, zoomable: boolean) {
+    // @ts-ignore
+    const data = findHierarchy([...keys], 0, "Kotlin IR", irMap, irMap2, topCategory, zoomable);
+    const hierarchy = d3
+        .hierarchy(data)
+        .sum(d => d.value);
+    hierarchy.children.sort((a, b) => b.value - a.value)
+    return hierarchy
+}
+
+export function updateHierarchy(zoomable: boolean, update: (node: d3.HierarchyNode<TreeMapNode>) => void) {
+    return function() {
+        const value = (document.getElementById("viewMode") as HTMLSelectElement).value;
+        if (!isCategory(value)) return;
+
+        let data = null
+        paintGradients = true;
+        if (value === "retained") {
+            data = getHierarchy(irMap, null, "retained", zoomable);
+        } else if (value === "shallow") {
+            data = getHierarchy(irShallowMap, null, "shallow", zoomable);
+            paintGradients = false;
+        } else {
+            data = getHierarchy(irMap, irShallowMap, "retained", zoomable);
+        }
+        update(data);
+    }
+}
+
+export function buildOnTableUpdate(update: () => void) {
+    return function (names: string[], state: boolean) {
+        names.forEach(name => {
+            if (!state) {
+                keys.delete(name);
+                console.log(`${name} deleted`);
+            } else {
+                keys.add(name);
+                console.log(`${name} added`);
+            }
+        });
+        update();
+    }
 }

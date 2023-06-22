@@ -1,41 +1,48 @@
 import * as d3 from "d3";
 import {HierarchyRectangularNode} from "d3";
 import {createSvg} from "../svgGen";
-import {getId, height, irMap, irShallowMap, keys, width} from "./resources";
+import {
+    buildOnTableUpdate,
+    getId,
+    height,
+    irMap,
+    irShallowMap,
+    isCategory,
+    keys,
+    updateHierarchy,
+    width
+} from "./resources";
 import {buildTreeView} from "../graph/treeView";
 import {findHierarchy, TreeMapCategory, TreeMapNode} from "../processing";
 
 const STROKE_SPACE = 4
 const name = d => d.ancestors().reverse().map(d => d.data.name).join("/")
 const format = d3.format(",d")
-const x = d3.scaleLinear().rangeRound([0, width]);
-const y = d3.scaleLinear().rangeRound([0, height]);
+let x = d3.scaleLinear().rangeRound([0, width]);
+let y = d3.scaleLinear().rangeRound([0, height]);
 const svg = createSvg(height, width)
     .style("font", "10px sans-serif")
     .attr("viewBox", [0.5, -30.5, width, height + 30])
     .attr("transform", "translate(0, 30)")
 const treemap = d3
     .treemap()
-    // .size([width, height - 60])
-    .tile(tile)
-buildTreeView(irMap, true, () => {
+    .tile(tile);
+let group = null
+
+const select = document.getElementById("viewMode") as HTMLSelectElement;
+const update = updateHierarchy(true, (data) => {
+    svg.selectAll("g").remove()
+    x = d3.scaleLinear().rangeRound([0, width]);
+    y = d3.scaleLinear().rangeRound([0, height]);
+    group = svg
+        .append("g")
+        .call(render, treemap(data))
 });
-
-const data = getHierarchy(irMap, irShallowMap, "retained");
-const hierarchy = d3
-    .hierarchy(data)
-    // .sum(d => (d.category === "shallow" ? 0 : d.value));
-    .sum(d => d.value);
-hierarchy.children.sort((a, b) => b.value - a.value)
-
-const root = treemap(hierarchy);
-
-let group = svg
-    .append("g")
-    .call(render, root);
+select.oninput = update;
+update();
+buildTreeView(irMap, true, buildOnTableUpdate(update));
 
 function render(group: d3.Selection<SVGGElement, any, HTMLElement, any>, root: HierarchyRectangularNode<TreeMapNode>) {
-    console.log(root);
     const node = group
         .selectAll("g")
         .data(root.children.concat(root))
@@ -154,11 +161,3 @@ function tile(node, x0, y0, x1, y1) {
         child.y1 = y0 + child.y1 / height * (y1 - y0);
     }
 }
-
-function getHierarchy(irMap: Map<string, number>, irMap2: Map<string, number>, topCategory: TreeMapCategory) {
-    // @ts-ignore
-    return findHierarchy([...keys], 0, "Kotlin IR", irMap, irMap2, topCategory, true);
-}
-
-
-
