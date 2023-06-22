@@ -6,7 +6,7 @@ import * as d3 from "d3";
 
 export const STROKE_SPACE = 4
 
-export const irMap = new Map(Object.entries(kotlinRetainedSize));
+export const irMap = new Map(Object.entries(kotlinRetainedSize).map(x => [x[0], x[1].size]));
 export const irShallowMap = new Map(Object.entries(kotlinDeclarationsSize).map(x => [x[0], x[1].size]));
 export const height = window.innerHeight * 0.97;
 export const width = window.innerWidth * 0.8;

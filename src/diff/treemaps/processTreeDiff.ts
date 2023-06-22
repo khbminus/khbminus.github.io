@@ -1,12 +1,7 @@
-function findNumberOfDots(string: String): number {
-    let cnt = 0;
-    for (let i in string) {
-        const x = string[i];
-        if (x === ".") {
-            cnt++;
-        }
-    }
-    return cnt;
+import {splitByDot} from "../../processing";
+
+function findNumberOfDots(string: string): number {
+    return splitByDot(string).length - 1;
 }
 
 export type DiffTreeMapNode = {
@@ -64,10 +59,10 @@ export function findHierarchy(
     });
 
     const notLeafs = strings.filter(x => findNumberOfDots(x) != depth);
-    const firstElements = new Set(notLeafs.map(x => x.split(".")[depth]));
+    const firstElements = new Set(notLeafs.map(x =>splitByDot(x)[depth]));
     firstElements.forEach((element) => {
         const newLeaf = findHierarchy(
-            notLeafs.filter(x => x.split(".")[depth] == element),
+            notLeafs.filter(x => splitByDot(x)[depth] == element),
             depth + 1,
             element,
             oldValues,

@@ -1,12 +1,5 @@
-function findNumberOfDots(string: String): number {
-    let cnt = 0;
-    for (let i in string) {
-        const x = string[i];
-        if (x === ".") {
-            cnt++;
-        }
-    }
-    return cnt;
+function findNumberOfDots(string: string): number {
+    return splitByDot(string).length - 1;
 }
 
 export type TreeMapCategory = "retained" | "shallow" | "middle";
@@ -54,10 +47,10 @@ export function findHierarchy(
     });
 
     const notLeafs = strings.filter(x => findNumberOfDots(x) != depth);
-    const firstElements = new Set(notLeafs.map(x => x.split(".")[depth]));
+    const firstElements = new Set(notLeafs.map(x => splitByDot(x)[depth]));
     firstElements.forEach((element) => {
         const newLeaf = findHierarchy(
-            notLeafs.filter(x => x.split(".")[depth] == element),
+            notLeafs.filter(x => splitByDot(x)[depth] == element),
             depth + 1,
             element,
             values,
@@ -104,4 +97,36 @@ export const escapeHtml = (unsafe) => {
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#039;');
+}
+
+export function splitByDot(x: string): string[] {
+    const compelement = {")": "(", "]": "[", ">": "<", "}": "{"};
+    const chars = [...x]
+    const stack: string[] = []
+    const res: string[] = []
+    let current = ""
+    chars.forEach(c => {
+        if (c === ".") {
+            if (stack.length === 0) {
+                res.push(current)
+                current = "";
+            } else {
+                current = current.concat(".");
+            }
+            return;
+        }
+        if (c === "(" || c === "{" || c == "<" || c == "[") {
+            stack.push(c);
+        } else if (c === ")" || c === "}" || c === ">" || c === "]") {
+            while (stack.length > 1 && stack[stack.length - 1] != compelement[c]) {
+                stack.pop();
+            }
+            stack.pop();
+        }
+        current = current.concat(c);
+    });
+    if (current.length > 0) {
+        res.push(current);
+    }
+    return res;
 }

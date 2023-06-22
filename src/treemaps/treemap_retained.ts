@@ -1,18 +1,20 @@
 import * as d3 from "d3";
-import {kotlinRetainedSize} from "../ir-sizes-retained";
-import {escapeHtml, findHierarchy, TreeMapCategory, TreeMapNode} from "../processing";
+import {escapeHtml, TreeMapNode} from "../processing";
 import {colors, createSvg} from "../svgGen";
-import {kotlinDeclarationsSize} from "../ir-sizes";
 import {buildTreeView} from "../graph/treeView";
-import {buildOnTableUpdate, createGradients, height, isCategory, keys, updateHierarchy, width} from "./resources";
+import {
+    buildOnTableUpdate,
+    createGradients,
+    height,
+    irMap, irShallowMap,
+    updateHierarchy,
+    width
+} from "./resources";
 
 let rects = null
 let titles = null
 
 const STROKE_SPACE = 4
-
-const irMap = new Map(Object.entries(kotlinRetainedSize));
-const irShallowMap = new Map(Object.entries(kotlinDeclarationsSize).map(x => [x[0], x[1].size]));
 
 
 const svg = createSvg(height, width)
@@ -24,15 +26,17 @@ const treemap = d3.treemap()
     .size([width, height])
     .paddingInner(3);
 
-function getHierarchy(map1: Map<string, number>, map2: Map<string, number>, topCategory: TreeMapCategory) {
-    return findHierarchy([...keys], 0, "Kotlin IR", map1, map2, topCategory);
-}
-const update = updateHierarchy(false, buildTreeMap);
+const update = updateHierarchy(false, (x) => {
+    svg.selectAll("rect").remove();
+    svg.selectAll("text").remove();
+    buildTreeMap(x);
+});
 update();
 buildTreeView(irMap, true, buildOnTableUpdate(update));
 
 
 function buildTreeMap(hierarchy: d3.HierarchyNode<TreeMapNode>) {
+    console.log(hierarchy);
     const root = treemap(hierarchy);
     const colorScale = (d: d3.HierarchyRectangularNode<any>) => colors[d.depth];
     rects = svg.selectAll("rect")
