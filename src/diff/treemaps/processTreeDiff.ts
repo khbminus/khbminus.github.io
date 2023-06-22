@@ -11,6 +11,8 @@ function findNumberOfDots(string: String): number {
 
 export type DiffTreeMapNode = {
     value: number,
+    plusChange: number,
+    minusChange: number,
     name: string,
     category: "regular" | "diff-pos" | "diff-neg" | "middle",
     children: DiffTreeMapNode[]
@@ -32,16 +34,22 @@ export function findHierarchy(
         const children: DiffTreeMapNode[] = (includeNotChanged ? [{
             name: x,
             value: newValue - oldValue,
+            plusChange: (newValue > oldValue ? newValue - oldValue : 0),
+            minusChange: (newValue < oldValue ? oldValue - newValue : 0),
             category: (newValue > oldValue ? "diff-pos" : "diff-neg"),
             children: []
         }, {
             name: x,
             value: value,
+            plusChange: 0,
+            minusChange: 0,
             category: "regular",
             children: []
         }] : [{
             name: x,
             value: newValue - oldValue,
+            plusChange: (newValue > oldValue ? newValue - oldValue : 0),
+            minusChange: (newValue < oldValue ? oldValue - newValue : 0),
             category: (newValue > oldValue ? "diff-pos" : "diff-neg"),
             children: []
         }]);
@@ -49,6 +57,8 @@ export function findHierarchy(
             name: x,
             value: 0,
             category: "middle",
+            plusChange: children.map(x => x.plusChange).reduce((a, b) => a + b),
+            minusChange: children.map(x => x.minusChange).reduce((a, b) => a + b),
             children: children
         };
     });
@@ -70,6 +80,8 @@ export function findHierarchy(
         name: name,
         category: "middle",
         children: leafs,
+        plusChange: leafs.map(x => x.plusChange).reduce((a, b) => a + b),
+        minusChange: leafs.map(x => x.minusChange).reduce((a, b) => a + b),
         value: 0// leafs.map(x => x.value).reduce((a, b) => a + b)
     }
 }

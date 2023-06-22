@@ -1,13 +1,14 @@
 import * as d3 from "d3";
 import {HierarchyRectangularNode} from "d3";
-import {colors, createSvg} from "../../svgGen";
+import {createSvg} from "../../svgGen";
 import {buildTreeView, updateKeys} from "../../graph/treeView";
-import {irMap1, irMap2} from "../commonDiffResources";
-import {height, width} from "../../treemaps/resources";
+import {irMap1, irMap2, retainedIrMap1, retainedIrMap2} from "../commonDiffResources";
+import {getId, height, width} from "../../treemaps/resources";
 import {DiffTreeMapNode, findHierarchy} from "./processTreeDiff";
-import {getId} from "../../treemaps/resources";
 
 const STROKE_SPACE = 4
+
+let currentMaps = [irMap1, irMap2];
 
 const name = d => d.ancestors().reverse().map(d => d.data.name).join("/")
 const format = d3.format(",d")
@@ -54,6 +55,8 @@ let group = null
 
 const select = document.getElementById("viewMode") as HTMLSelectElement;
 select.oninput = update;
+const sizeSelect = document.getElementById("sizeMode") as HTMLSelectElement;
+sizeSelect.oninput = updateSizes;
 // @ts-ignore
 let keys: Set<string> = new Set([...irMap1.keys(), ...irMap2.keys()]);
 buildTreeView(
@@ -87,7 +90,16 @@ function render(group: d3.Selection<SVGGElement, any, HTMLElement, any>, root: H
         .on("click", (event, d) => d === root ? zoomout(root) : zoomin(d));
 
     node.append("title")
-        .text(d => `${name(d)}\n${format(d.value)}`);
+        .text(d => {
+            let res = `${name(d)}\n${format(d.value)}`;
+            if (d.data.plusChange > 0) {
+                res += `\n++:${format(d.data.plusChange)}`;
+            }
+            if (d.data.minusChange > 0) {
+                res += `\n--:${format(d.data.minusChange)}`;
+            }
+            return res;
+        });
 
     node
         .append("rect")
@@ -132,8 +144,17 @@ function render(group: d3.Selection<SVGGElement, any, HTMLElement, any>, root: H
         .attr("font-weight", d => d === root ? "bold" : null)
         .selectAll("tspan")
         .data(d => {
-            const x = (d === root ? name(d) : d.data.name);
-            return [x].concat(format(d.value))
+            if (d === root) {
+                return [name(d)];
+            }
+            let res = [d.data.name].concat(format(d.value))
+            if (d.data.plusChange > 0) {
+                res = res.concat(`++: ${format(d.data.plusChange)}`)
+            }
+            if (d.data.minusChange > 0) {
+                res = res.concat(`--: ${format(d.data.minusChange)}`);
+            }
+            return res;
         })
         .join("tspan")
         .attr("x", 3)
@@ -213,6 +234,7 @@ function getHierarchy(irMap1: Map<string, number>, irMap2: Map<string, number>, 
 
 function update() {
     let includeNotChanged = false;
+    const [irMap1, irMap2] = currentMaps;
     if (select.value === "common") {
         // @ts-ignore
         keys = new Set([...irMap1.keys(), ...irMap2.keys()]);
@@ -238,4 +260,13 @@ function update() {
     group = svg
         .append("g")
         .call(render, treemap(getHierarchy(irMap1, irMap2, includeNotChanged)))
+}
+
+function updateSizes() {
+    if (sizeSelect.value === "shallow") {
+        currentMaps = [irMap1, irMap2];
+    } else {
+        currentMaps = [retainedIrMap1, retainedIrMap2];
+    }
+    update();
 }

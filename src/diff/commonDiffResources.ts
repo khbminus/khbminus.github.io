@@ -1,8 +1,8 @@
 import {kotlinDeclarationsSize as sizes2} from "../ir-sizes1";
 import {kotlinDeclarationsSize as sizes1} from "../ir-sizes";
 
-import {kotlinRetainedSize as rsz1} from "../ir-sizes-stdlib-retained";
-import {kotlinRetainedSize as rsz2} from "../ir-sizes-stdlib-changed-retained";
+import {kotlinRetainedSize as rsz1} from "../ir-sizes-retained";
+import {kotlinRetainedSize as rsz2} from "../ir-sizes-changed-retained";
 
 import {diffDeclarationsSizes as dd} from "./simple-diff/ir-sizes";
 import {diffReachibilityInfos as dr} from "./simple-diff/dce-graph";

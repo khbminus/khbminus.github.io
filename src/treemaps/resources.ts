@@ -1,4 +1,4 @@
-import {kotlinRetainedSize} from "../retained-size";
+import {kotlinRetainedSize} from "../ir-sizes-retained";
 import {kotlinDeclarationsSize} from "../ir-sizes";
 import {colors} from "../svgGen";
 import {findHierarchy, TreeMapCategory, TreeMapNode} from "../processing";

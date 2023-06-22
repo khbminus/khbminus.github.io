@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import {kotlinRetainedSize} from "../retained-size";
+import {kotlinRetainedSize} from "../ir-sizes-retained";
 import {escapeHtml, findHierarchy, TreeMapCategory, TreeMapNode} from "../processing";
 import {colors, createSvg} from "../svgGen";
 import {kotlinDeclarationsSize} from "../ir-sizes";
