@@ -1,13 +1,13 @@
-import {kotlinDeclarationsSize as sizes2} from "../ir-sizes1";
-import {kotlinDeclarationsSize as sizes1} from "../ir-sizes";
+import {kotlinDeclarationsSize as sizes1} from "../ir-sizes-stdlib";
+import {kotlinDeclarationsSize as sizes2} from "../ir-sizes-stdlib-changed";
 
-import {kotlinRetainedSize as rsz1} from "../ir-sizes-retained";
-import {kotlinRetainedSize as rsz2} from "../ir-sizes-changed-retained";
+import {kotlinRetainedSize as rsz1} from "../ir-sizes-stdlib-retained";
+import {kotlinRetainedSize as rsz2} from "../ir-sizes-stdlib-changed-retained";
 
-import {diffDeclarationsSizes as dd} from "./simple-diff/ir-sizes";
-import {diffReachibilityInfos as dr} from "./simple-diff/dce-graph";
-import {diffMetaNodesInfo as dm} from "./simple-diff/metanodes";
-import {diffDeclarationsDifference as ddd} from "./simple-diff/node-diff";
+import {diffDeclarationsSizes as dd} from "./stdlib-diff/ir-sizes";
+import {diffReachibilityInfos as dr} from "./stdlib-diff/dce-graph";
+import {diffMetaNodesInfo as dm} from "./stdlib-diff/metanodes";
+import {diffDeclarationsDifference as ddd} from "./stdlib-diff/node-diff";
 
 import {diffDeclarationsSizes as rdd} from "./stdlib-diff-retained/ir-sizes";
 import {diffReachibilityInfos as rdr} from "./stdlib-diff-retained/dce-graph";
