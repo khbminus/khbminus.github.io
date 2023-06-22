@@ -6,7 +6,7 @@ import {
     buildOnTableUpdate,
     createGradients,
     height,
-    irMap, irShallowMap,
+    irMap, irShallowMap, paintGradients,
     updateHierarchy,
     width
 } from "./resources";
@@ -21,7 +21,6 @@ const svg = createSvg(height, width)
 const patterns = d3.select("svg").append("defs");
 const gradients = createGradients(patterns);
 
-let paintGradients = true
 const treemap = d3.treemap()
     .size([width, height])
     .paddingInner(3);
