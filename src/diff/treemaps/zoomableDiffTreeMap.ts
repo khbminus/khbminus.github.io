@@ -148,10 +148,10 @@ function render(group: d3.Selection<SVGGElement, any, HTMLElement, any>, root: H
                 return [name(d)];
             }
             let res = [d.data.name].concat(format(d.value))
-            if (d.data.plusChange > 0) {
+            if (d.data.plusChange > 0 && d.data.category != "diff-pos") {
                 res = res.concat(`++: ${format(d.data.plusChange)}`)
             }
-            if (d.data.minusChange > 0) {
+            if (d.data.minusChange > 0 && d.data.category != "diff-neg") {
                 res = res.concat(`--: ${format(d.data.minusChange)}`);
             }
             return res;
@@ -162,6 +162,16 @@ function render(group: d3.Selection<SVGGElement, any, HTMLElement, any>, root: H
         .attr("y", (d, i, nodes) => `${(i === (nodes.length - 1)) * 0.3 + 1.1 + i * 0.9}em`)
         .attr("fill-opacity", (d, i, nodes) => i === nodes.length - 1 ? 0.7 : null)
         .attr("font-weight", (d, i, nodes) => i === nodes.length - 1 ? "normal" : null)
+        .style("fill", d => {
+            console.log(d);
+            if (d.startsWith("--")) {
+                return "#8a1116";
+            }
+            if (d.startsWith("++")) {
+                return "hsl(120,97%,30%)";
+            }
+            return null;
+        })
         // @ts-ignore
         .text(d => d);
     group.call(position, root);
