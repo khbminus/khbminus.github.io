@@ -31,7 +31,7 @@ export function findHierarchy(
         const value = Math.max(oldValue, newValue) - Math.abs(oldValue - newValue);
         const children: DiffTreeMapNode[] = (includeNotChanged ? [{
             name: x,
-            value: Math.abs(oldValue - newValue),
+            value: newValue - oldValue,
             category: (newValue > oldValue ? "diff-pos" : "diff-neg"),
             children: []
         }, {
@@ -41,7 +41,7 @@ export function findHierarchy(
             children: []
         }] : [{
             name: x,
-            value: Math.abs(oldValue - newValue),
+            value: newValue - oldValue,
             category: (newValue > oldValue ? "diff-pos" : "diff-neg"),
             children: []
         }]);

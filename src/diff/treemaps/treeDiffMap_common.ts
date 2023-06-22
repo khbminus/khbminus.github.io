@@ -6,28 +6,7 @@ import {buildTreeView} from "../../graph/treeView";
 
 const STROKE_SPACE = 4
 
-export function buildDiffMap(irMap1: Map<string, number>, irMap2: Map<string, number>, includeNotChanged: boolean) {
-    let keys: Set<string> = new Set([...irMap1.keys(), ...irMap2.keys()]);
-
-    buildTreeView(new Map([...keys].map(x => [x, 0])), true, (names, state) => {
-        names.forEach(name => {
-            if (state) {
-                keys.add(name);
-            } else {
-                keys.delete(name);
-            }
-        });
-        svg.selectAll("text").remove();
-        svg.selectAll("rect").remove();
-        redraw();
-    })
-
-
-    const height = window.innerHeight * 0.96;
-    const width = window.innerWidth * 0.8;
-    const svg = createSvg(height, width)
-    const patterns = d3.select("svg").append("defs");
-
+export function buildGradients(patterns) {
     const minusGradients = new Map([...colors.keys()].map(i => {
         const color = colors[((i - 1) % colors.length + colors.length) % colors.length];
         const id = "minus" + color.replace("#", "");
@@ -68,6 +47,31 @@ export function buildDiffMap(irMap1: Map<string, number>, irMap2: Map<string, nu
         // .attr("fill", "none")
         return [colors[i], id]
     }));
+    return [minusGradients, plusGradients];
+}
+
+export function buildDiffMap(irMap1: Map<string, number>, irMap2: Map<string, number>, includeNotChanged: boolean) {
+    let keys: Set<string> = new Set([...irMap1.keys(), ...irMap2.keys()]);
+
+    buildTreeView(new Map([...keys].map(x => [x, 0])), true, (names, state) => {
+        names.forEach(name => {
+            if (state) {
+                keys.add(name);
+            } else {
+                keys.delete(name);
+            }
+        });
+        svg.selectAll("text").remove();
+        svg.selectAll("rect").remove();
+        redraw();
+    })
+
+
+    const height = window.innerHeight * 0.96;
+    const width = window.innerWidth * 0.8;
+    const svg = createSvg(height, width)
+    const patterns = d3.select("svg").append("defs");
+    const [minusGradients, plusGradients] = buildGradients(patterns);
     redraw();
 
     function redraw() {
@@ -76,7 +80,7 @@ export function buildDiffMap(irMap1: Map<string, number>, irMap2: Map<string, nu
 
         const hierarchy = d3
             .hierarchy(hierarchyObj)
-            .sum((d: any) => d.value)
+            .sum((d: any) => Math.abs(d.value))
             .sort((a, b) => b.value - a.value)
         hierarchy.children.sort((a, b) => b.value - a.value)
         const treemap = d3.treemap()

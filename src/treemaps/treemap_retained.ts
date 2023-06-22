@@ -33,8 +33,6 @@ buildTreeView(irMap, true, buildOnTableUpdate(update));
 
 
 function buildTreeMap(hierarchy: d3.HierarchyNode<TreeMapNode>) {
-
-
     const root = treemap(hierarchy);
     const colorScale = (d: d3.HierarchyRectangularNode<any>) => colors[d.depth];
     rects = svg.selectAll("rect")
