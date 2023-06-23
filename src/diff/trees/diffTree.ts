@@ -1,6 +1,7 @@
 import {createSvg} from "../../svgGen";
 import {hierarchy, TreeType} from "./dataProcessing";
 import * as d3 from "d3";
+import {escapeHtml} from "../../processing";
 
 const width = window.innerWidth
 
@@ -74,15 +75,36 @@ node
     })
     .attr("r", 5);
 
+
 node
     .append("text")
     .attr("dy", "0.31em")
     .attr("x", d => d.children ? -6 : 6)
     .attr("text-anchor", d => d.children ? "end" : "start")
     .text(d => {
-        console.log(d)
         return d.data.name;
     })
     .clone(true).lower()
     .attr("stroke", "white");
+
+node
+    .append("title")
+    .text(d => {
+        let type = "mixed";
+        switch (d.data.type) {
+            case TreeType.NotChanged:
+                type = "Not changed";
+                break;
+            case TreeType.Mixed:
+                type = "Mixed";
+                break;
+            case TreeType.Removed:
+                type = "Removed";
+                break;
+            case TreeType.Added:
+                type = "Added";
+                break;
+        }
+        return `${d.data.name}\n${type}\nΔ: ${d.data.size}`;
+    })
 
