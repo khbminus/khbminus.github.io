@@ -13,6 +13,7 @@ import {diffDeclarationsSizes as rdd} from "./simple-diff-retained/ir-sizes";
 import {diffReachibilityInfos as rdr} from "./simple-diff-retained/dce-graph";
 import {diffMetaNodesInfo as rdm} from "./simple-diff-retained/metanodes";
 import {diffDeclarationsDifference as rddd} from "./simple-diff-retained/node-diff";
+import {diffTreeParents as rtp} from "./simple-diff-retained/parents"
 
 
 export const irMap1 = new Map(Object.entries(sizes1).map(x => [x[0], x[1].size]));
@@ -29,3 +30,4 @@ export const retainedDiffDeclarationsSizes = rdd;
 export const retainedDiffReachibilityInfos = rdr;
 export const retainedDiffMetaNodesInfo = rdm;
 export const retainedDeclarationsDifference = rddd;
+export const retainedDiffTreeParents = rtp;
