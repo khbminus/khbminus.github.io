@@ -12,6 +12,8 @@ export class TreeNode {
     public type: TreeType
     public x: number = null
     public y: number = null
+    public children: TreeNode[] = []
+    public _children: d3.HierarchyNode<TreeNode>[] = null
 
     constructor(collapsed: boolean, name: string, size: number, type: TreeType) {
         this.collapsed = collapsed;
@@ -46,12 +48,11 @@ const edges: Edge[] = Object.entries(retainedDiffTreeParents)
     .map(([child, parent]) => {
         return {source: nodes.get(parent), target: nodes.get(child)};
     })
-edges.push({source: null, target: nodes.get("Fake source")})
+edges.forEach(e => {
+    if ( e.target.type != TreeType.NotChanged) {
+        e.source.children.push(e.target)
+    }
+})
 
 // @ts-ignore
-export const hierarchy: d3.HierarchyNode<TreeNode> = d3
-    .stratify()
-    // @ts-ignore
-    .id((x: Edge) => x.target)
-    // @ts-ignore
-    .parentId((x: Edge) => x.source)(edges.filter(x => x.target.type != TreeType.NotChanged))
+export const hierarchy: d3.HierarchyNode<TreeNode> = d3.hierarchy(nodes.get("Fake source"));
