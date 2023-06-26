@@ -20,7 +20,8 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
     const width = window.innerWidth * 0.8;
     const svg = createSvg(height, width)
     let maxDepth = 3;
-    let currentEdgeStatus: "forward" | "backward" | "all" = "forward"
+    let currentEdgeStatus: "forward" | "backward" | "all" = "forward";
+    let isAuto: boolean = false
     type Node = { name: string, value: number };
 // @ts-ignore
     const irMap: Map<string, IrSizeNode> =
@@ -102,6 +103,7 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
     const nameToNodeMap = new Map(nodeEntries.map(x => [x.name, x]))
     createDepthSelect();
     createModeSelect();
+    useAutoMod();
     const clickedStatus = buildTreeView(
 // @ts-ignore
         new Map([...irMap.entries()].map(x => [x[0], x[1].size])),
@@ -278,11 +280,15 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
         // @ts-ignore
         const startVertexes = [...clickedStatus.entries()].filter(x => x[1]).map(x => x[0])
         reachable.clear();
-        breathFirstSearch(startVertexes);
-        console.log(reachable);
+        if (isAuto) {
+            startVertexes.forEach(x => {
+                autoSolving(x, 0);
+            })
+        } else {
+            breathFirstSearch(startVertexes);
+        }
         // @ts-ignore
         const nextNodes = [...reachable].map(x => {
-            console.log(x);
             return nameToNodeMap.get(x);
         });
         const nextLinks = edges.filter(isEdgeVisible);
@@ -292,6 +298,19 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
         links = createLinks(nextLinks);
         nodes = createNodes(nextNodes);
         simulation.alpha(1).restart();
+    }
+
+    function autoSolving(vertex: string, depth: number) {
+        if (irMap.get(vertex).size == 0 || reachable.has(vertex) || depth == maxDepth) {
+            return;
+        }
+        reachable.add(vertex);
+        if (!adjacencyList.has(vertex)) {
+            return;
+        }
+        adjacencyList.get(vertex).forEach(x => {
+            autoSolving(x.getTargetName(), depth + 1);
+        })
     }
 
     function breathFirstSearch(startVertexes: string[]) {
@@ -407,7 +426,6 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
         input.valueAsNumber = 3;
         input.oninput = (ev) => {
             maxDepth = (ev.currentTarget as HTMLInputElement).valueAsNumber;
-            console.log(maxDepth);
             label.textContent = maxDepth.toString();
             updateGraph();
         }
@@ -455,5 +473,13 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
             updateGraph();
         }
         document.getElementById("tree-view-select").appendChild(select);
+    }
+
+    function useAutoMod() {
+        const element = document.getElementById("find-reason") as HTMLInputElement;
+        element.oninput = () => {
+            isAuto = element.checked;
+            updateGraph();
+        }
     }
 }
