@@ -49,7 +49,7 @@ const edges: Edge[] = Object.entries(retainedDiffTreeParents)
         return {source: nodes.get(parent), target: nodes.get(child)};
     })
 edges.forEach(e => {
-    if ( e.target.type != TreeType.NotChanged) {
+    if (e.target.type != TreeType.NotChanged) {
         e.source.children.push(e.target)
     }
 })

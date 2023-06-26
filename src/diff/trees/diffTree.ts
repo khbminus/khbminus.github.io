@@ -10,7 +10,7 @@ buildTreeView(
     }
 );
 
-const width = window.innerWidth * 0.8
+const width = window.innerWidth
 
 const dx = 25
 const dy = 180
