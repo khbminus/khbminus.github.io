@@ -1,4 +1,4 @@
-import {hierarchy, TreeNode, TreeType} from "./dataProcessing";
+import {hierarchyWithChanged, hierarchyWithoutChanged, TreeNode, TreeType} from "./dataProcessing";
 import * as d3 from "d3";
 import {buildTreeView} from "../../graph/treeView";
 import {retainedDiffDeclarationsSizes} from "../commonDiffResources";
@@ -12,18 +12,12 @@ buildTreeView(
 
 const width = window.innerWidth
 
+let hierarchy = null;
+let availableHierarchies = {0: hierarchyWithoutChanged, 1: hierarchyWithChanged}
+
 const dx = 25
 const dy = 180
 const tree = d3.tree().nodeSize([dx, dy]);
-hierarchy.sort((a, b) => d3.ascending(a.data.name, b.data.name));
-hierarchy.descendants().forEach((d, i) => {
-    d.data._children = d.children;
-    d.id = i;
-    // if (d.data.collapsed || d.data.children.filter(x => x.type != TreeType.NotChanged).length === 0) {
-    if (d.data.children.length > 4)
-        d.children = null;
-    // }
-})
 
 const svg = d3.select("body")
     .append("svg")
@@ -59,8 +53,6 @@ const buildLink = d3.linkHorizontal()
     // @ts-ignore
     .y(d => d.x)
 
-hierarchy.x0 = dy / 2;
-hierarchy.y0 = 0;
 let height = 0;
 
 function update(event: Event, source: d3.HierarchyNode<TreeNode>) {
@@ -185,7 +177,23 @@ function zoomed({transform}) {
     globalG.attr("transform", transform);
 }
 
-update(null, hierarchy);
+function selectHierarchy() {
+    const element = document.getElementById("show-not-changed") as HTMLInputElement;
+
+    hierarchy = availableHierarchies[Number(element.checked)];
+    hierarchy.x0 = dy / 2;
+    hierarchy.y0 = 0;
+    hierarchy.sort((a, b) => d3.ascending(a.data.name, b.data.name));
+    hierarchy.descendants().forEach((d, i) => {
+        // if (d.data.collapsed || d.data.children.filter(x => x.type != TreeType.NotChanged).length === 0) {
+        if (d.data.children.length > 4)
+            d.children = null;
+        // }
+    });
+    update(null, hierarchy);
+}
+(document.getElementById("show-not-changed") as HTMLInputElement).onclick = selectHierarchy;
+selectHierarchy();
 
 function reset() {
     svg.transition().duration(750).call(

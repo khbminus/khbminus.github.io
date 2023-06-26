@@ -38,21 +38,41 @@ function getType(x: string): TreeType {
     throw new Error(`Unknown tree type ${x}`);
 }
 
-const nodes: Map<string, TreeNode> = new Map(Object.entries(retainedDiffDeclarationsSizes).map(([key, value]) => {
-    const type = getType(value.type);
-    return [key, new TreeNode(type != TreeType.Mixed, key, value.size, type)];
-}));
+function getNodes() {
+    return new Map(Object.entries(retainedDiffDeclarationsSizes).map(([key, value]) => {
+        const type = getType(value.type);
+        return [key, new TreeNode(type != TreeType.Mixed, key, value.size, type)];
+    }));
+}
 
-const edges: Edge[] = Object.entries(retainedDiffTreeParents)
-    .filter(([a, b]) => a !== b)
-    .map(([child, parent]) => {
-        return {source: nodes.get(parent), target: nodes.get(child)};
-    })
-edges.forEach(e => {
+const nodesWithoutChanged: Map<string, TreeNode> = getNodes();
+const nodesChanged = getNodes();
+
+function getEdges(node: Map<string, TreeNode>) {
+    return Object.entries(retainedDiffTreeParents)
+        .filter(([a, b]) => a !== b)
+        .map(([child, parent]) => {
+            return {source: node.get(parent), target: node.get(child)};
+        });
+};
+
+getEdges(nodesWithoutChanged).forEach(e => {
     if (e.target.type != TreeType.NotChanged) {
         e.source.children.push(e.target)
     }
-})
+});
+getEdges(nodesChanged).forEach(e => e.source.children.push(e.target))
 
 // @ts-ignore
-export const hierarchy: d3.HierarchyNode<TreeNode> = d3.hierarchy(nodes.get("Fake source"));
+export const hierarchyWithoutChanged: d3.HierarchyNode<TreeNode> = d3.hierarchy(nodesWithoutChanged.get("Fake source"));
+export const hierarchyWithChanged: d3.HierarchyNode<TreeNode> = d3.hierarchy(nodesChanged.get("Fake source"));
+
+[hierarchyWithoutChanged, hierarchyWithChanged].forEach(hierarchy => hierarchy.descendants().forEach((d, i) => {
+    d.data._children = d.children;
+    // @ts-ignore
+    d.id = i;
+    // if (d.data.collapsed || d.data.children.filter(x => x.type != TreeType.NotChanged).length === 0) {
+    if (d.data.children.length > 4)
+        d.children = null;
+    // }
+}));
