@@ -56,8 +56,8 @@ const buildLink = d3.linkHorizontal()
 let height = 0;
 
 function update(event: Event, source: d3.HierarchyNode<TreeNode>) {
-    const nodes = hierarchy.descendants().reverse();
-    const links = hierarchy.links();
+    const nodes: d3.HierarchyNode<TreeNode>[] = hierarchy.descendants().reverse();
+    const links: d3.HierarchyLink<TreeNode>[] = hierarchy.links();
 
     tree(hierarchy);
 
@@ -72,6 +72,7 @@ function update(event: Event, source: d3.HierarchyNode<TreeNode>) {
 
     const transition = svg.transition()
         .duration(250)
+        // @ts-ignore
         .attr("viewBox", [-70, left.x - 5, width, height])
         .tween("resize", window.ResizeObserver ? null : () => () => svg.dispatch("toggle"));
 
@@ -138,12 +139,14 @@ function update(event: Event, source: d3.HierarchyNode<TreeNode>) {
         });
 
     const nodeUpdate = node.merge(nodeEnter).transition(transition)
+        // @ts-ignore
         .attr("transform", d => `translate(${d.y},${d.x})`)
         .attr("fill-opacity", 1)
         .attr("stroke-opacity", 1);
 
     // Transition exiting nodes to the parent's new position.
     const nodeExit = node.exit().transition(transition).remove()
+        // @ts-ignore
         .attr("transform", d => `translate(${source.y},${source.x})`)
         .attr("fill-opacity", 0)
         .attr("stroke-opacity", 0);
@@ -155,15 +158,30 @@ function update(event: Event, source: d3.HierarchyNode<TreeNode>) {
     const linkEnter = link.enter().append("path")
         // @ts-ignore
         .attr("d", d => {
+            // @ts-ignore
             const o = {x: source.x0, y: source.y0};
+            // @ts-ignore
             return buildLink({source: o, target: o});
-        });
+        })
+        .attr("stroke", d => {
+            const delta = d.target.data.size;
+            if (delta == 0) {
+                return "#545454";
+            } else if (delta < 0) {
+                return "#941919";
+            } else {
+                return "#1b7a3b";
+            }
+        })
 
     link.merge(linkEnter).transition(transition)
+        // @ts-ignore
         .attr("d", buildLink);
     link.exit().transition(transition).remove()
         .attr("d", d => {
+            // @ts-ignore
             const o = {x: source.x, y: source.y};
+            // @ts-ignore
             return buildLink({source: o, target: o});
         });
 
@@ -192,6 +210,7 @@ function selectHierarchy() {
     });
     update(null, hierarchy);
 }
+
 (document.getElementById("show-not-changed") as HTMLInputElement).onclick = selectHierarchy;
 selectHierarchy();
 
@@ -202,5 +221,6 @@ function reset() {
         d3.zoomTransform(svg.node()).invert([0, 0])
     );
 }
+
 (document.getElementById("reset-button") as HTMLButtonElement).onclick = reset;
 
