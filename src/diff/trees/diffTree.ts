@@ -199,7 +199,7 @@ function reset() {
     svg.transition().duration(750).call(
         zoom.transform,
         d3.zoomIdentity,
-        d3.zoomTransform(svg.node()).translate(hierarchy.x, hierarchy.y)
+        d3.zoomTransform(svg.node()).invert([0, 0])
     );
 }
 (document.getElementById("reset-button") as HTMLButtonElement).onclick = reset;
