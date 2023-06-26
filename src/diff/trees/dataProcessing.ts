@@ -14,6 +14,7 @@ export class TreeNode {
     public y: number = null
     public children: TreeNode[] = []
     public _children: d3.HierarchyNode<TreeNode>[] = null
+    public node: d3.HierarchyNode<TreeNode> = null
 
     constructor(collapsed: boolean, name: string, size: number, type: TreeType) {
         this.collapsed = collapsed;
@@ -45,8 +46,8 @@ function getNodes() {
     }));
 }
 
-const nodesWithoutChanged: Map<string, TreeNode> = getNodes();
-const nodesChanged = getNodes();
+export const nodesWithoutChanged: Map<string, TreeNode> = getNodes();
+export const nodesChanged = getNodes();
 
 function getEdges(node: Map<string, TreeNode>) {
     return Object.entries(retainedDiffTreeParents)
@@ -69,6 +70,7 @@ export const hierarchyWithChanged: d3.HierarchyNode<TreeNode> = d3.hierarchy(nod
 
 [hierarchyWithoutChanged, hierarchyWithChanged].forEach(hierarchy => hierarchy.descendants().forEach((d, i) => {
     d.data._children = d.children;
+    d.data.node = d;
     // @ts-ignore
     d.id = i;
     // if (d.data.collapsed || d.data.children.filter(x => x.type != TreeType.NotChanged).length === 0) {

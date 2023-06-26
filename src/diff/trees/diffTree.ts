@@ -1,23 +1,34 @@
-import {hierarchyWithChanged, hierarchyWithoutChanged, TreeNode, TreeType} from "./dataProcessing";
+import {
+    hierarchyWithChanged,
+    hierarchyWithoutChanged,
+    nodesChanged,
+    nodesWithoutChanged,
+    TreeNode,
+    TreeType
+} from "./dataProcessing";
 import * as d3 from "d3";
-import {buildTreeView} from "../../graph/treeView";
+import {buildTreeView, updateKeys} from "../../graph/treeView";
 import {retainedDiffDeclarationsSizes} from "../commonDiffResources";
 
 buildTreeView(
     new Map(Object.entries(retainedDiffDeclarationsSizes).map(([key, value]) => [key, value.size])),
     false,
-    () => {
-    }
+    updateVisible
 );
 
 const width = window.innerWidth
 
 let hierarchy = null;
-let availableHierarchies = {0: hierarchyWithoutChanged, 1: hierarchyWithChanged}
+let nodes: Map<string, TreeNode> = null;
+let availableHierarchies: [d3.HierarchyNode<TreeNode>, Map<string, TreeNode>][] = [
+    [hierarchyWithoutChanged, nodesWithoutChanged],
+    [hierarchyWithChanged, nodesChanged]
+];
 
 const dx = 25
 const dy = 180
 const tree = d3.tree().nodeSize([dx, dy]);
+const visited = new Set<string>()
 
 const svg = d3.select("body")
     .append("svg")
@@ -42,7 +53,7 @@ const gNode = globalG
 
 const zoom = d3
     .zoom()
-    .scaleExtent([1, 10])
+    // .scaleExtent([1, 10])
     .on("zoom", zoomed);
 
 svg.call(zoom);
@@ -104,7 +115,7 @@ function update(event: Event, source: d3.HierarchyNode<TreeNode>) {
                     return "#777";
             }
         })
-        .attr("r", 5);
+        .attr("r", 5)
 
     nodeEnter
         .append("text")
@@ -115,7 +126,7 @@ function update(event: Event, source: d3.HierarchyNode<TreeNode>) {
         .clone(true).lower()
         .attr("stroke-linejoin", "round")
         .attr("stroke-width", 3)
-        .attr("stroke", "white");
+        .attr("stroke", "white")
 
     nodeEnter
         .append("title")
@@ -137,6 +148,10 @@ function update(event: Event, source: d3.HierarchyNode<TreeNode>) {
             }
             return `${d.data.name}\n${type}\nΔ: ${d.data.size}`;
         });
+
+    node.merge(nodeEnter)
+        .attr("opacity", d => visited.has(d.data.name) || visited.size == 0 ? 1 : 0.4);
+
 
     const nodeUpdate = node.merge(nodeEnter).transition(transition)
         // @ts-ignore
@@ -172,7 +187,11 @@ function update(event: Event, source: d3.HierarchyNode<TreeNode>) {
             } else {
                 return "#1b7a3b";
             }
-        })
+        });
+
+    link.merge(linkEnter)
+        .attr("opacity", d =>
+            (visited.has(d.source.data.name) && visited.has(d.target.data.name)) || visited.size == 0 ? 0.6 : 0.1);
 
     link.merge(linkEnter).transition(transition)
         // @ts-ignore
@@ -198,7 +217,12 @@ function zoomed({transform}) {
 function selectHierarchy() {
     const element = document.getElementById("show-not-changed") as HTMLInputElement;
 
-    hierarchy = availableHierarchies[Number(element.checked)];
+    [hierarchy, nodes] = availableHierarchies[Number(element.checked)];
+    console.log([...nodes.keys()]);
+    updateKeys([...nodes.entries()]
+        .filter(([key, node]) => node._children !== null)
+        .map(([key, node]) => key)
+    );
     hierarchy.x0 = dy / 2;
     hierarchy.y0 = 0;
     hierarchy.sort((a, b) => d3.ascending(a.data.name, b.data.name));
@@ -223,4 +247,50 @@ function reset() {
 }
 
 (document.getElementById("reset-button") as HTMLButtonElement).onclick = reset;
+
+let currentAdded = new Set<string>();
+
+function updateVisible(names: string[], value: boolean) {
+    visited.clear();
+    if (value) {
+        names.forEach(x => currentAdded.add(x));
+    } else {
+        names.forEach(x => currentAdded.delete(x));
+    }
+    currentAdded.forEach(x => {
+        if (visited.has(x))
+            return;
+        if (!visited.has(x)) visitSubtree(nodes.get(x));
+        if (!visited.has(x)) {
+            return;
+        }
+        let node = nodes.get(x).node;
+
+        node.children = nodes.get(x)._children;
+        while (node !== hierarchy) {
+            if (node.parent.children == null) {
+                node.parent.children = [node];
+            } else if (!node.parent.children.includes(node)) {
+                node.parent.children.push(node);
+            }
+            node = node.parent;
+        }
+    });
+    update(null, hierarchy);
+    if (!value) return;
+    const point = nodes.get(names[names.length - 1]).node;
+    svg.transition().duration(750).call(
+        zoom.translateTo,
+        point.y,
+        point.x
+    );
+}
+
+function visitSubtree(node: TreeNode) {
+    if (node.size == 0) {
+        return;
+    }
+    visited.add(node.name);
+    node.children.forEach(visitSubtree);
+}
 
