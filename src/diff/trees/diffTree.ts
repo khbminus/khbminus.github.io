@@ -1,10 +1,19 @@
 import {hierarchy, TreeNode, TreeType} from "./dataProcessing";
 import * as d3 from "d3";
+import {buildTreeView} from "../../graph/treeView";
+import {retainedDiffDeclarationsSizes} from "../commonDiffResources";
 
-const width = window.innerWidth
+buildTreeView(
+    new Map(Object.entries(retainedDiffDeclarationsSizes).map(([key, value]) => [key, value.size])),
+    false,
+    () => {
+    }
+);
+
+const width = window.innerWidth * 0.8
 
 const dx = 25
-const dy = width / (hierarchy.height + 1)
+const dy = 180
 const tree = d3.tree().nodeSize([dx, dy]);
 hierarchy.sort((a, b) => d3.ascending(a.data.name, b.data.name));
 hierarchy.descendants().forEach((d, i) => {
@@ -19,19 +28,30 @@ hierarchy.descendants().forEach((d, i) => {
 const svg = d3.select("body")
     .append("svg")
     .attr("viewBox", [-70, -10, width, dx])
+    .attr("width", width)
+    .attr("height", window.innerHeight)
     .attr("style", "max-width: 100%; height: auto; font: 8px sans-serif")
+
+const globalG = svg.append("g")
 // .attr("transform", `translate(${dy / 3}, ${-x0 + dx / 2})`)
-const gLink = svg
+const gLink = globalG
     .append("g")
     .attr("fill", "none")
     .attr("stroke", "#555")
     .attr("stroke-opacity", 0.4)
     .attr("stroke-width", 1.5)
 
-const gNode = svg
+const gNode = globalG
     .append("g")
     .attr("stroke-linejoin", "round")
     .attr("stroke-width", 3)
+
+const zoom = d3
+    .zoom()
+    .scaleExtent([1, 10])
+    .on("zoom", zoomed);
+
+svg.call(zoom);
 
 const buildLink = d3.linkHorizontal()
     // @ts-ignore
@@ -41,6 +61,7 @@ const buildLink = d3.linkHorizontal()
 
 hierarchy.x0 = dy / 2;
 hierarchy.y0 = 0;
+let height = 0;
 
 function update(event: Event, source: d3.HierarchyNode<TreeNode>) {
     const nodes = hierarchy.descendants().reverse();
@@ -55,7 +76,7 @@ function update(event: Event, source: d3.HierarchyNode<TreeNode>) {
         if (node.x > right.x) right = node;
     });
 
-    const height = right.x - left.x + 10;
+    height = right.x - left.x + 10;
 
     const transition = svg.transition()
         .duration(250)
@@ -160,6 +181,18 @@ function update(event: Event, source: d3.HierarchyNode<TreeNode>) {
     });
 }
 
+function zoomed({transform}) {
+    globalG.attr("transform", transform);
+}
+
 update(null, hierarchy);
 
+function reset() {
+    svg.transition().duration(750).call(
+        zoom.transform,
+        d3.zoomIdentity,
+        d3.zoomTransform(svg.node()).translate(hierarchy.x, hierarchy.y)
+    );
+}
+(document.getElementById("reset-button") as HTMLButtonElement).onclick = reset;
 
