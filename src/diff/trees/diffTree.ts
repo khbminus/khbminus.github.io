@@ -218,7 +218,6 @@ function selectHierarchy() {
     const element = document.getElementById("show-not-changed") as HTMLInputElement;
 
     [hierarchy, nodes] = availableHierarchies[Number(element.checked)];
-    console.log([...nodes.keys()]);
     updateKeys([...nodes.entries()]
         .filter(([key, node]) => node._children !== null)
         .map(([key, node]) => key)
