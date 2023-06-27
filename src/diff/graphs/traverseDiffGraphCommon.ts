@@ -84,6 +84,9 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
 
     if (FIX_UNKNOWN_NODES) {
         const pushNewNode = (name) => {
+            if (name === "kotlin.Array.<init>.size") {
+                console.log("shouldBeAdded");
+            }
             nodeEntries.push({
                 "name": name,
                 "value": radiusScale(0)
@@ -95,7 +98,7 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
             if (!names.has(e.getSourceName())) {
                 pushNewNode(e.getSourceName())
             }
-            if (!names.has(e.getSourceName())) {
+            if (!names.has(e.getTargetName())) {
                 pushNewNode(e.getTargetName())
             }
         });
@@ -138,7 +141,7 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
                 return (d as Node).name;
             })
             // @ts-ignore
-            .links(edges.filter(e => isMetaNode(e.getSourceName()) && isMetaNode(e.getTargetName()))))
+            .links([]))
         .force("charge", d3.forceManyBody().strength(-20))
         .force("center", d3.forceCenter(width / 2, height / 2))
         .force("x", d3.forceX())
@@ -287,10 +290,12 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
         } else {
             breathFirstSearch(startVertexes);
         }
+        console.log(reachable);
         // @ts-ignore
         const nextNodes = [...reachable].map(x => {
             return nameToNodeMap.get(x);
         });
+        console.log(nextNodes, nameToNodeMap);
         const nextLinks = edges.filter(isEdgeVisible);
         simulation.nodes(nextNodes as SimulationNodeDatum[]);
         (simulation.force("link") as d3.ForceLink<d3.SimulationNodeDatum, d3.SimulationLinkDatum<d3.SimulationNodeDatum>>)
@@ -477,6 +482,7 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
 
     function useAutoMod() {
         const element = document.getElementById("find-reason") as HTMLInputElement;
+        if (element === null) return;
         element.oninput = () => {
             isAuto = element.checked;
             updateGraph();

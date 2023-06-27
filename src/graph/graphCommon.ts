@@ -18,18 +18,17 @@ export function draw(kotlinDeclarationsSize, kotlinReachabilityInfos, kotlinReta
 // @ts-ignore
     const irMap: Map<string, IrSizeNode> = new Map(Object.entries(kotlinDeclarationsSize));
     const sizeValues = [...irMap.entries()]
-        .map(x => [kotlinRetainedSize[x[0]], kotlinRetainedSize[x[0]]])
+        .map(x => [kotlinRetainedSize[x[0]].size, kotlinRetainedSize[x[0]].size])
         .reduce((a, b) => [Math.min(a[0], b[0]), Math.max(a[1], b[1])]);
     const radiusScale = d3
         .scaleLinear()
-        .domain([
-            0,
-            sizeValues.reduce((a, b) => Math.max(a, b))
-        ])
+        .domain(sizeValues)
         .range([5, 100]);
 
     const nodeEntries: Node[] = [...irMap.entries()].map(lst => {
-        const r = radiusScale(kotlinRetainedSize[lst[0]])
+        // console.log(kotlinRetainedSize[lst[0]], radiusScale(kotlinRetainedSize[lst[0]]), radiusScale.domain())
+        // console.log(lst[1])
+        const r = radiusScale(kotlinRetainedSize[lst[0]].size)
         const scale = scaleLinear()
             .domain([0, r])
             .range([0, r / Math.sqrt(2)]);
@@ -76,6 +75,7 @@ export function draw(kotlinDeclarationsSize, kotlinReachabilityInfos, kotlinReta
             }
         });
     }
+    console.log("fixed");
 
     const categories = ["function", "property", "field", "anonymousInitializer", "class", "unknown"],
         colorScale = d3.scaleOrdinal() // the scale function
