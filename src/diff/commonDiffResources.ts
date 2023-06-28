@@ -13,16 +13,21 @@ import {diffDeclarationsDifference as ddd} from "./simple-diff/node-diff";
 // import {diffMetaNodesInfo as dm} from "./stdlib-diff/metanodes";
 // import {diffDeclarationsDifference as ddd} from "./stdlib-diff/node-diff";
 
-import {diffDeclarationsSizes as rdd} from "./simple-diff-retained/ir-sizes";
-import {diffReachibilityInfos as rdr} from "./simple-diff-retained/dce-graph";
-import {diffMetaNodesInfo as rdm} from "./simple-diff-retained/metanodes";
-import {diffDeclarationsDifference as rddd} from "./simple-diff-retained/node-diff";
-import {diffTreeParents as rtp} from "./simple-diff-retained/parents";
+// import {diffDeclarationsSizes as rdd} from "./simple-diff-retained/ir-sizes";
+// import {diffReachibilityInfos as rdr} from "./simple-diff-retained/dce-graph";
+// import {diffMetaNodesInfo as rdm} from "./simple-diff-retained/metanodes";
+// import {diffDeclarationsDifference as rddd} from "./simple-diff-retained/node-diff";
+// import {diffTreeParents as rtp} from "./simple-diff-retained/parents";
 // import {diffDeclarationsSizes as rdd} from "./stdlib-diff-retained/ir-sizes";
 // import {diffReachibilityInfos as rdr} from "./stdlib-diff-retained/dce-graph";
 // import {diffMetaNodesInfo as rdm} from "./stdlib-diff-retained/metanodes";
 // import {diffDeclarationsDifference as rddd} from "./stdlib-diff-retained/node-diff";
 // import {diffTreeParents as rtp} from "./stdlib-diff-retained/parents";
+import {diffDeclarationsSizes as rdd} from "./stdlib-diff-commit-graph/ir-sizes";
+import {diffReachibilityInfos as rdr} from "./stdlib-diff-commit-graph/dce-graph";
+import {diffMetaNodesInfo as rdm} from "./stdlib-diff-commit-graph/metanodes";
+import {diffDeclarationsDifference as rddd} from "./stdlib-diff-commit-graph/node-diff";
+import {diffTreeParents as rtp} from "./stdlib-commit-diff-retained/parents";
 
 
 export const irMap1 = new Map(Object.entries(sizes1).map(x => [x[0], x[1].size]));

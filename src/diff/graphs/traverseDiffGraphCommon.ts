@@ -33,11 +33,8 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
 
     const radiusScale = d3
         .scaleLinear()
-        .domain([
-            0,
-            sizeValues.reduce((a, b) => Math.max(a, b))
-        ])
-        .range([5, 100]);
+        .domain(sizeValues)
+        .range([5, 20]);
 // @ts-ignore
     const nodeEntries: Node[] = [...irMap.entries()].map(lst => {
         const r = radiusScale(Math.abs(lst[1].size))
@@ -53,11 +50,13 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
         source: string | Node
         target: string | Node
         isVisible: boolean
+        description: string
 
-        constructor(source: string, target: string) {
+        constructor(source: string, target: string, description: string) {
             this.source = source;
             this.target = target;
             this.isVisible = true;
+            this.description = description;
         }
 
         getSourceName() {
@@ -79,7 +78,7 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
     const edges: EdgeWithVisibility[] = deleteSelfEdges(diffReachibilityInfos)
         .filter(x => !isMetaNode(x.source) && !isMetaNode(x.target))
         .map(x => {
-            return new EdgeWithVisibility(x.source, x.target)
+            return new EdgeWithVisibility(x.source, x.target, x.description)
         });
 
     if (FIX_UNKNOWN_NODES) {
@@ -130,7 +129,7 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
             .data(data)
             .enter()
             .append("line")
-            .style("stroke", UNFOCUSED_LINE_STROKE);
+            .style("stroke", getStroke);
     }
 
     let links = createLinks([])
@@ -141,7 +140,8 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
                 return (d as Node).name;
             })
             // @ts-ignore
-            .links([]))
+            .links([])
+            .distance(() => 80))
         .force("charge", d3.forceManyBody().strength(-20))
         .force("center", d3.forceCenter(width / 2, height / 2))
         .force("x", d3.forceX())
@@ -165,7 +165,7 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
             })
             .on("mousemove", mousemove)
             .on("mouseout", function (event, d) {
-                links.attr("stroke", UNFOCUSED_LINE_STROKE);
+                links.attr("stroke", getStroke);
                 tool.style("display", "none");
             })
             .call(
@@ -251,7 +251,7 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
                     if (e.source.name === d.name || e.target.name === d.name) {
                         return FOCUSED_LINE_STROKE;
                     }
-                    return UNFOCUSED_LINE_STROKE;
+                    return getStroke(e);
                 }
             )
             .style(
@@ -454,7 +454,7 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
                 pushEdge(e);
             }
             if (currentEdgeStatus == "backward" || currentEdgeStatus == "all") {
-                pushEdge(new EdgeWithVisibility(e.getTargetName(), e.getSourceName()));
+                pushEdge(new EdgeWithVisibility(e.getTargetName(), e.getSourceName(), e.description));
             }
         });
     }
@@ -486,6 +486,17 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
         element.oninput = () => {
             isAuto = element.checked;
             updateGraph();
+        }
+    }
+
+    function getStroke(e: EdgeWithVisibility) {
+        console.log(e.description);
+        if (e.description === "FromRight") {
+            return "#1dda5a";
+        } else if (e.description === "FromLeft") {
+            return "#c41515";
+        } else {
+            return UNFOCUSED_LINE_STROKE;
         }
     }
 }
