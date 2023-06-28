@@ -280,7 +280,9 @@ function updateVisible(names: string[], value: boolean) {
     const point = nodes.get(names[names.length - 1]).node;
     svg.transition().duration(750).call(
         zoom.translateTo,
+        // @ts-ignore
         point.y,
+        // @ts-ignore
         point.x
     );
 }
