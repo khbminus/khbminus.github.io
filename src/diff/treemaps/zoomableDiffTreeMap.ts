@@ -59,6 +59,7 @@ const sizeSelect = document.getElementById("sizeMode") as HTMLSelectElement;
 sizeSelect.oninput = updateSizes;
 // @ts-ignore
 let keys: Set<string> = new Set([...irMap1.keys(), ...irMap2.keys()]);
+let treeViewSet: Set<string> = new Set([...keys]);
 buildTreeView(
     new Map(
         // @ts-ignore
@@ -67,10 +68,10 @@ buildTreeView(
     (names: string[], state: boolean) => {
         names.forEach(name => {
             if (!state) {
-                keys.delete(name);
+                treeViewSet.delete(name);
                 console.log(`${name} deleted`);
             } else {
-                keys.add(name);
+                treeViewSet.add(name);
                 console.log(`${name} added`);
             }
         });
@@ -163,7 +164,6 @@ function render(group: d3.Selection<SVGGElement, any, HTMLElement, any>, root: H
         .attr("fill-opacity", (d, i, nodes) => i === nodes.length - 1 ? 0.7 : null)
         .attr("font-weight", (d, i, nodes) => i === nodes.length - 1 ? "normal" : null)
         .style("fill", d => {
-            console.log(d);
             if (d.startsWith("--")) {
                 return "#8a1116";
             }
@@ -267,6 +267,7 @@ function update() {
     y = d3.scaleLinear().rangeRound([0, height]);
     // @ts-ignore
     updateKeys([...keys]);
+    keys = new Set([...keys].filter(x => treeViewSet.has(x)));
     group = svg
         .append("g")
         .call(render, treemap(getHierarchy(irMap1, irMap2, includeNotChanged)))
