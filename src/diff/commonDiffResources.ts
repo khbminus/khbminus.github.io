@@ -23,11 +23,11 @@ import {diffDeclarationsDifference as ddd} from "./simple-diff/node-diff";
 // import {diffMetaNodesInfo as rdm} from "./stdlib-diff-retained/metanodes";
 // import {diffDeclarationsDifference as rddd} from "./stdlib-diff-retained/node-diff";
 // import {diffTreeParents as rtp} from "./stdlib-diff-retained/parents";
-import {diffDeclarationsSizes as rdd} from "./stdlib-diff-commit-graph/ir-sizes";
+import {diffDeclarationsSizes as rdd} from "./incremental-research-diff/ir-sizes";
 import {diffReachibilityInfos as rdr} from "./stdlib-diff-commit-graph/dce-graph";
 import {diffMetaNodesInfo as rdm} from "./stdlib-diff-commit-graph/metanodes";
 import {diffDeclarationsDifference as rddd} from "./stdlib-diff-commit-graph/node-diff";
-import {diffTreeParents as rtp} from "./stdlib-commit-diff-retained/parents";
+import {diffTreeParents as rtp} from "./incremental-research-diff/parents";
 
 
 export const irMap1 = new Map(Object.entries(sizes1).map(x => [x[0], x[1].size]));
