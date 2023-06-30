@@ -135,6 +135,9 @@ export function build(hierarchy: d3.HierarchyNode<TreeNode>) {
                     case TreeType.Unknown:
                         type = "Unknown";
                         break;
+                    case TreeType.FakeSource:
+                        type = "Fake source (produced to combined components into tree)"
+                        break;
                 }
                 return `${d.data.name}\n${type}\nΔ: ${d.data.size}`;
             });

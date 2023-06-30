@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 
 export enum TreeType {
-    Function, Class, Property, Field, AnonymousInitializer, Unknown
+    Function, Class, Property, Field, AnonymousInitializer, Unknown, FakeSource
 }
 
 export class TreeNode {
@@ -37,6 +37,7 @@ function getType(x: string): TreeType {
     if (x == "anonymous initializer") return TreeType.AnonymousInitializer;
     if (x == "class") return TreeType.Class;
     if (x == "unknown") return TreeType.Unknown;
+    if (x == "fake source") return TreeType.FakeSource;
     throw new Error(`Unknown tree type ${x}`);
 }
 
