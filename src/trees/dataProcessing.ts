@@ -36,6 +36,7 @@ function getType(x: string): TreeType {
     if (x == "field") return TreeType.Field;
     if (x == "anonymous initializer") return TreeType.AnonymousInitializer;
     if (x == "class") return TreeType.Class;
+    if (x == "unknown") return TreeType.Unknown;
     throw new Error(`Unknown tree type ${x}`);
 }
 
