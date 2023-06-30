@@ -3,7 +3,7 @@ import * as d3 from "d3";
 
 export function getAllResources(kotlinRetainedSize, kotlinDeclarationsSize) {
     // @ts-ignore
-    const irMap: Map<string, number> = new Map(Object.entries(kotlinRetainedSize).map(x => [x[0], x[1].size]));
+    const irMap: Map<string, number> = new Map(Object.entries(kotlinRetainedSize).filter(x => x[0] != "Fake source").map(x => [x[0], x[1].size]));
     // @ts-ignore
     const irShallowMap: Map<string, number> = new Map(Object.entries(kotlinDeclarationsSize).map(x => [x[0], x[1].size]));
     const keys = new Set([...irMap.keys()]);
