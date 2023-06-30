@@ -260,4 +260,5 @@ export function build(hierarchy: d3.HierarchyNode<TreeNode>) {
         visited.add(node.name);
         node.children.forEach(visitSubtree);
     }
+    update(null, hierarchy);
 }
