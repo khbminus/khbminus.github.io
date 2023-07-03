@@ -21,9 +21,9 @@ export function findHierarchy(
     forZoomable: boolean = false
 ): TreeMapNode {
     const leafs: TreeMapNode[] = strings.filter(x => findNumberOfDots(x) == depth).map(x => {
+        const split = splitByDot(x);
+        const name = split[split.length - 1];
         if (shallowValues != null) {
-            const split = splitByDot(x);
-            const name = split[split.length - 1];
             if (forZoomable) {
                 return {
                     name: name,
