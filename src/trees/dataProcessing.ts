@@ -41,7 +41,7 @@ function getType(x: string): TreeType {
     throw new Error(`Unknown tree type ${x}`);
 }
 
-export function getHierarchy(declarationSizes, parents) {
+export function getHierarchy(declarationSizes, parents): [d3.HierarchyNode<TreeNode>, Map<string, TreeNode>] {
     function getNodes() {
         return new Map(Object.entries(declarationSizes).map(([key, value]) => {
             // @ts-ignore
@@ -71,5 +71,5 @@ export function getHierarchy(declarationSizes, parents) {
         if (d.data.children.length > 4)
             d.children = null;
     });
-    return hierarchy;
+    return [hierarchy, nodes];
 }
