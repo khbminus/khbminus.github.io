@@ -4,4 +4,5 @@ import {retainedTreeInfo} from "../resources/retained-right/dominator-tree";
 import {build} from "./retainedTree";
 
 const hierarchy = getHierarchy(kotlinRetainedSize, retainedTreeInfo);
-build(hierarchy);
+const map = new Map(Object.entries(kotlinRetainedSize).map(([k, v]) => [k, v.size]));
+build(hierarchy, map);

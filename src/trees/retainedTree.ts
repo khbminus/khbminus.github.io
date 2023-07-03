@@ -4,10 +4,10 @@ import {buildTreeView} from "../graph/treeView";
 import {colors} from "../svgGen";
 
 
-export function build(hierarchy: d3.HierarchyNode<TreeNode>) {
+export function build(hierarchy: d3.HierarchyNode<TreeNode>, keys: Map<string, number>) {
 
     buildTreeView(
-        new Map(hierarchy.descendants().map(node => [node.data.name, node.data.size])),
+        keys,
         false,
         updateVisible
     );
