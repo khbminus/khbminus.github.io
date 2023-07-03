@@ -22,9 +22,11 @@ export function findHierarchy(
 ): TreeMapNode {
     const leafs: TreeMapNode[] = strings.filter(x => findNumberOfDots(x) == depth).map(x => {
         if (shallowValues != null) {
+            const split = splitByDot(x);
+            const name = split[split.length - 1];
             if (forZoomable) {
                 return {
-                    name: x,
+                    name: name,
                     value: 0,
                     category: "middle",
                     children: [{name: `${x} (retained)`, value: values.get(x) - shallowValues.get(x), category: "retained",
@@ -32,14 +34,14 @@ export function findHierarchy(
                 }
             }
             return {
-                name: x,
+                name: name,
                 value: values.get(x) - shallowValues.get(x),
                 category: "retained",
                 children: [{name: x, value: shallowValues.get(x), category: "shallow", children: []}]
             };
         }
         return {
-            name: x,
+            name: name,
             value: values.get(x),
             category: topCategory,
             children: []
