@@ -1,19 +1,23 @@
 <html>
 <head>
-  <link rel="stylesheet" type="text/css" href="../base.css" />
-  <title>TreeMap of Kotlin IR</title>
+    <link rel="stylesheet" type="text/css" href="../base.css"/>
+    <title>TreeMap of Kotlin IR</title>
 </head>
 <body style="overflow-y: hidden">
 <script src="./zoomable-right.ts" type="module"></script>
 <div id="tree-view-container">
-  <select id="viewMode" name="viewMode">
-    <option value="middle">Show shallow and retained size</option>
-    <option value="shallow">Show only shallow size</option>
-    <option value="retained">Show only retained size</option>
-  </select>
-  <div id="tree-view-searchbar">
-  </div>
-  <div id="tree-view-content"></div>
+    <select id="viewMode" name="viewMode">
+        <option value="middle">Show shallow and retained size</option>
+        <option value="shallow">Show only shallow size</option>
+        <option value="retained">Show only retained size</option>
+    </select>
+    <label for="minimumSize">Minimum radius</label>
+    <div id="tree-view-size" style="display: flex;flex-direction: row">
+        <input type="range" id="minimumSize" name="minimumSize">
+        <span id="size-value">0</span></div>
+    <div id="tree-view-searchbar">
+    </div>
+    <div id="tree-view-content"></div>
 </div>
 </body>
 </html>

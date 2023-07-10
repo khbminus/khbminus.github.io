@@ -1,5 +1,8 @@
-import {findHierarchy, TreeMapCategory, TreeMapNode} from "../processing";
+import {findHierarchy, postProcess, TreeMapCategory, TreeMapNode} from "../processing";
 import * as d3 from "d3";
+import {max, min} from "d3";
+
+let minimumRenderableSize = 0;
 
 export function getAllResources(kotlinRetainedSize, kotlinDeclarationsSize) {
     // @ts-ignore
@@ -7,27 +10,36 @@ export function getAllResources(kotlinRetainedSize, kotlinDeclarationsSize) {
     // @ts-ignore
     const irShallowMap: Map<string, number> = new Map(Object.entries(kotlinDeclarationsSize).map(x => [x[0], x[1].size]));
     const keys = new Set([...irMap.keys()]);
-    const getHierarchy = function (irMap: Map<string, number>, irMap2: Map<string, number>, topCategory: TreeMapCategory, zoomable: boolean) {
-        // @ts-ignore
-        const data = findHierarchy([...keys], 0, "Kotlin IR", irMap, irMap2, topCategory, zoomable);
+
+    const getHierarchy = function (irMap: Map<string, number>, irMap2: Map<string, number>, topCategory: TreeMapCategory, radius: number) {
+        const data = postProcess(
+            findHierarchy([...keys], 0, "Kotlin IR", irMap, irMap2, topCategory),
+            radius
+        );
         const hierarchy = d3
             .hierarchy(data)
             .sum(d => d.value);
         hierarchy.children.sort((a, b) => b.value - a.value)
         return hierarchy
     };
-    const updateHierarchy = function (zoomable: boolean, update: (node: d3.HierarchyNode<TreeMapNode>) => void) {
-        return function() {
+    const updateHierarchy = function (update: (node: d3.HierarchyNode<TreeMapNode>) => void) {
+        return function () {
             const value = (document.getElementById("viewMode") as HTMLSelectElement).value;
             if (!isCategory(value)) return;
-
+            const sizeSelector = <HTMLInputElement>document.getElementById("minimumSize");
             let data = null
             if (value === "retained") {
-                data = getHierarchy(irMap, null, "retained", zoomable);
+                sizeSelector.min = min(irMap.values()).toString();
+                sizeSelector.max = max(irMap.values()).toString();
+                data = getHierarchy(irMap, null, "retained", minimumRenderableSize);
             } else if (value === "shallow") {
-                data = getHierarchy(irShallowMap, null, "shallow", zoomable);
+                sizeSelector.min = min(irShallowMap.values()).toString();
+                sizeSelector.max = max(irShallowMap.values()).toString();
+                data = getHierarchy(irShallowMap, null, "shallow", minimumRenderableSize);
             } else {
-                data = getHierarchy(irMap, irShallowMap, "retained", zoomable);
+                sizeSelector.min = min(irMap.values()).toString();
+                sizeSelector.max = max(irMap.values()).toString();
+                data = getHierarchy(irMap, irShallowMap, "retained", minimumRenderableSize);
             }
             update(data);
         }
@@ -36,7 +48,7 @@ export function getAllResources(kotlinRetainedSize, kotlinDeclarationsSize) {
     [...irShallowMap.keys()].forEach(x => {
         const type = kotlinDeclarationsSize[x].type;
         const arr = typeToNames.has(type) ? typeToNames.get(type) : [];
-        typeToNames.set(type,  arr.concat(x));
+        typeToNames.set(type, arr.concat(x));
     });
     console.log(typeToNames);
     const buildOnTableUpdate = function (update: () => void) {
@@ -87,15 +99,27 @@ export function getAllResources(kotlinRetainedSize, kotlinDeclarationsSize) {
         "typeToNames": typeToNames
     };
 }
+
 export const height = window.innerHeight * 0.97;
 export const width = window.innerWidth * 0.8;
 
 let counter = 0
+
 export function getId(): string {
     return `${counter++}`
 }
 
 export function isCategory(x: string): x is TreeMapCategory {
     return x === "retained" || x === "shallow" || x == "middle";
+}
+
+export function buildOnSizeUpdate(update: () => void) {
+    return function () {
+        const range = <HTMLInputElement>document.getElementById("minimumSize");
+        const value = range.valueAsNumber;
+        document.getElementById("size-value").textContent = value.toString();
+        minimumRenderableSize = value;
+        update();
+    }
 }
 

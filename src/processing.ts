@@ -20,34 +20,34 @@ export function findHierarchy(
     shallowValues: Map<string, number> = null,
     topCategory: TreeMapCategory
 ): TreeMapNode {
-    const leafs: TreeMapNode[] = strings.filter(x => findNumberOfDots(x) == depth).map(x => {
-        const split = splitByDot(x);
-        const name = split[split.length - 1];
-        if (shallowValues != null) {
-            const shallow = (shallowValues.has(x) ? shallowValues.get(x) : 0);
+    const leafs: TreeMapNode[] = strings.filter(x => findNumberOfDots(x) == depth)
+        .map(x => {
+            const split = splitByDot(x);
+            const name = split[split.length - 1];
+            if (shallowValues != null) {
+                const shallow = (shallowValues.has(x) ? shallowValues.get(x) : 0);
+                return {
+                    name: name,
+                    value: 0,
+                    shallowValue: shallow,
+                    category: "middle",
+                    children: [{
+                        name: `${x}`,
+                        value: values.get(x),
+                        shallowValue: shallow,
+                        category: "retained",
+                        children: []
+                    }]
+                }
+            }
             return {
                 name: name,
-                value: 0,
-                shallowValue: shallow,
-                category: "middle",
-                children: [{
-                    name: `${x}`,
-                    value: values.get(x),
-                    shallowValue: shallow,
-                    category: "retained",
-                    children: []
-                }]
-            }
-        }
-        return {
-            name: name,
-            value: values.get(x),
-            category: topCategory,
-            shallowValue: null,
-            children: []
-        };
-    });
-
+                value: values.get(x),
+                category: topCategory,
+                shallowValue: null,
+                children: []
+            };
+        });
     const notLeafs = strings.filter(x => findNumberOfDots(x) != depth);
     const firstElements = new Set(notLeafs.map(x => splitByDot(x)[depth]));
     firstElements.forEach((element) => {
@@ -65,9 +65,36 @@ export function findHierarchy(
         name: name,
         category: "middle",
         children: leafs,
-        shallowValue: leafs.map(x => x.shallowValue).reduce((a, b) => a + b),
+        shallowValue: leafs.map(x => x.shallowValue).reduce((a, b) => a + b, 0),
         value: 0// leafs.map(x => x.value).reduce((a, b) => a + b)
     }
+}
+
+export function postProcess(node: TreeMapNode, radius: number): TreeMapNode | number {
+    if (node === null) {
+        return;
+    }
+    if (node.children.length === 0) {
+        return (node.value >= radius ? node : node.value);
+    }
+    const processed = node
+        .children
+        .map(child => postProcess(child, radius))
+    const additionalValue = processed
+        .filter((x): x is number => typeof x === "number")
+        .reduce((a, b) => a + b, 0);
+    const leafs = processed
+        .filter((x): x is TreeMapNode => typeof x !== "number")
+    if (leafs.length === 0) {
+        return node.value + additionalValue;
+    }
+    return {
+        name: node.name,
+        shallowValue: node.shallowValue,
+        children: leafs,
+        category: node.category,
+        value: node.value + additionalValue
+    };
 }
 
 export type Edge = { source: string, target: string, description: string, isTargetContagious: boolean };

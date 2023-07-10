@@ -1,7 +1,8 @@
 import * as d3 from "d3";
-import {HierarchyRectangularNode} from "d3";
+import {HierarchyRectangularNode, max, min} from "d3";
 import {createSvg} from "../svgGen";
 import {
+    buildOnSizeUpdate,
     getAllResources,
     getId,
     height,
@@ -28,7 +29,7 @@ export function build(kotlinRetainedSize, kotlinDeclarationsSize) {
     let group = null
 
     const select = document.getElementById("viewMode") as HTMLSelectElement;
-    const update = updateHierarchy(true, (data) => {
+    const update = updateHierarchy((data) => {
         svg.selectAll("g").remove()
         x = d3.scaleLinear().rangeRound([0, width]);
         y = d3.scaleLinear().rangeRound([0, height]);
@@ -39,6 +40,8 @@ export function build(kotlinRetainedSize, kotlinDeclarationsSize) {
     select.oninput = update;
     update();
     buildTreeView(irMap, true, buildOnTableUpdate(update), [...typeToNames.keys()]);
+    const sizeSelector = <HTMLInputElement>document.getElementById("minimumSize");
+    sizeSelector.oninput = buildOnSizeUpdate(update);
 
     function render(group: d3.Selection<SVGGElement, any, HTMLElement, any>, root: HierarchyRectangularNode<TreeMapNode>) {
         const node = group
