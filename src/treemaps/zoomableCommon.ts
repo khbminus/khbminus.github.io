@@ -15,6 +15,7 @@ export function build(kotlinRetainedSize, kotlinDeclarationsSize) {
     const {buildOnTableUpdate, irMap, updateHierarchy} = getAllResources(kotlinRetainedSize, kotlinDeclarationsSize);
     const name = d => d.ancestors().reverse().map(d => d.data.name).join("/")
     const format = d3.format(",d")
+    const ratioFormat = d3.format(".4f")
     let x = d3.scaleLinear().rangeRound([0, width]);
     let y = d3.scaleLinear().rangeRound([0, height]);
     const svg = createSvg(height, width)
@@ -88,8 +89,11 @@ export function build(kotlinRetainedSize, kotlinDeclarationsSize) {
             .attr("font-weight", d => d === root ? "bold" : null)
             .selectAll("tspan")
             .data(d => {
-                const x = (d === root ? name(d) : d.data.name);
-                return [x].concat(format(d.value))
+                let x: string[] = [(d === root ? name(d) : d.data.name)];
+                x = x.concat(`Retained size: ${format(d.value)}`);
+                x = x.concat(`Shallow size: ${format(kotlinDeclarationsSize[d.data.name])}`)
+                x = x.concat(`Shallow/Retained ratio: ${ratioFormat(kotlinDeclarationsSize[d.data.name] / d.value)}`)
+                return x;
             })
             .join("tspan")
             .attr("x", 3)
@@ -97,6 +101,14 @@ export function build(kotlinRetainedSize, kotlinDeclarationsSize) {
             .attr("y", (d, i, nodes) => `${(i === (nodes.length - 1)) * 0.3 + 1.1 + i * 0.9}em`)
             .attr("fill-opacity", (d, i, nodes) => i === nodes.length - 1 ? 0.7 : null)
             .attr("font-weight", (d, i, nodes) => i === nodes.length - 1 ? "normal" : null)
+            .attr("fill", d => {
+                if (d.startsWith("Shallow/")) {
+                    return "lightblue";
+                } else if (d.startsWith("Shallow ")) {
+                    return "#2F4F4F";
+                }
+                return null;
+            })
             // @ts-ignore
             .text(d => d);
         group.call(position, root);
