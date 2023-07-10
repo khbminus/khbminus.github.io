@@ -52,7 +52,8 @@ export function build(kotlinRetainedSize, kotlinDeclarationsSize) {
             .on("click", (event, d) => d === root ? zoomout(root) : zoomin(d));
 
         node.append("title")
-            .text(d => `${name(d)}\n${format(d.value)}`);
+            .text(d =>
+                `${name(d)}\n${format(d.value)}\n${format(d.data.shallowValue)}\n${ratioFormat(d.data.shallowValue / d.value)}`);
 
         node
             .append("rect")
@@ -91,8 +92,11 @@ export function build(kotlinRetainedSize, kotlinDeclarationsSize) {
             .data(d => {
                 let x: string[] = [(d === root ? name(d) : d.data.name)];
                 x = x.concat(`Retained size: ${format(d.value)}`);
-                x = x.concat(`Shallow size: ${format(kotlinDeclarationsSize[d.data.name])}`)
-                x = x.concat(`Shallow/Retained ratio: ${ratioFormat(kotlinDeclarationsSize[d.data.name] / d.value)}`)
+                if (d !== root && d.data.shallowValue !== null) {
+                    console.log(d.data.name, d.data.shallowValue);
+                    x = x.concat(`Shallow size: ${format(d.data.shallowValue)}`);
+                    x = x.concat(`Shallow/Retained ratio: ${ratioFormat(d.data.shallowValue / d.value)}`);
+                }
                 return x;
             })
             .join("tspan")
@@ -103,7 +107,7 @@ export function build(kotlinRetainedSize, kotlinDeclarationsSize) {
             .attr("font-weight", (d, i, nodes) => i === nodes.length - 1 ? "normal" : null)
             .attr("fill", d => {
                 if (d.startsWith("Shallow/")) {
-                    return "lightblue";
+                    return "#b77700";
                 } else if (d.startsWith("Shallow ")) {
                     return "#2F4F4F";
                 }

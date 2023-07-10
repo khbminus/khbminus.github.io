@@ -8,7 +8,8 @@ export type TreeMapNode = {
     name: string,
     children: TreeMapNode[],
     category: TreeMapCategory,
-    value: number
+    value: number,
+    shallowValue: number,
 }
 
 export function findHierarchy(
@@ -17,33 +18,32 @@ export function findHierarchy(
     name: string,
     values: Map<string, number>,
     shallowValues: Map<string, number> = null,
-    topCategory: TreeMapCategory,
-    forZoomable: boolean = false
+    topCategory: TreeMapCategory
 ): TreeMapNode {
     const leafs: TreeMapNode[] = strings.filter(x => findNumberOfDots(x) == depth).map(x => {
         const split = splitByDot(x);
         const name = split[split.length - 1];
         if (shallowValues != null) {
-            if (forZoomable) {
-                return {
-                    name: name,
-                    value: 0,
-                    category: "middle",
-                    children: [{name: `${x} (retained)`, value: values.get(x) - shallowValues.get(x), category: "retained",
-                        children: [{name: "shallow size", value: shallowValues.get(x), category: "shallow", children: []}]}]
-                }
-            }
+            const shallow = (shallowValues.has(x) ? shallowValues.get(x) : 0);
             return {
                 name: name,
-                value: values.get(x) - shallowValues.get(x),
-                category: "retained",
-                children: [{name: x, value: shallowValues.get(x), category: "shallow", children: []}]
-            };
+                value: 0,
+                shallowValue: shallow,
+                category: "middle",
+                children: [{
+                    name: `${x}`,
+                    value: values.get(x),
+                    shallowValue: shallow,
+                    category: "retained",
+                    children: []
+                }]
+            }
         }
         return {
             name: name,
             value: values.get(x),
             category: topCategory,
+            shallowValue: null,
             children: []
         };
     });
@@ -57,15 +57,16 @@ export function findHierarchy(
             element,
             values,
             shallowValues,
-            topCategory,
-            forZoomable
+            topCategory
         );
         leafs.push(newLeaf);
     });
+    console.log(name, leafs)
     return {
         name: name,
         category: "middle",
         children: leafs,
+        shallowValue: leafs.map(x => x.shallowValue).reduce((a, b) => a + b),
         value: 0// leafs.map(x => x.value).reduce((a, b) => a + b)
     }
 }
