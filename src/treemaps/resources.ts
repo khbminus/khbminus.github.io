@@ -32,10 +32,41 @@ export function getAllResources(kotlinRetainedSize, kotlinDeclarationsSize) {
             update(data);
         }
     }
+    const typeToNames: Map<string, string[]> = new Map();
+    [...irShallowMap.keys()].forEach(x => {
+        const type = kotlinDeclarationsSize[x].type;
+        const arr = typeToNames.has(type) ? typeToNames.get(type) : [];
+        typeToNames.set(type,  arr.concat(x));
+    });
+    console.log(typeToNames);
     const buildOnTableUpdate = function (update: () => void) {
+        const ticked = new Map<string, number>();
+        const get = (name: string) => ticked.has(name) ? ticked.get(name) : 0
+        const untickType = (name: string, value: boolean) => {
+            const typeRegex = /type: (.+)/
+            const type = name.match(typeRegex)[1];
+            console.log(`type: ${type}`);
+            typeToNames.get(type).forEach(x => {
+                const newValue = get(x) + (value ? -1 : 1);
+                ticked.set(x, newValue);
+                if (newValue == 0) {
+                    keys.add(x);
+                    console.log(`${x} added`);
+                } else {
+                    keys.delete(x);
+                    console.log(`${x} deleted`);
+                }
+            });
+        }
         return function (names: string[], state: boolean) {
             names.forEach(name => {
-                if (!state) {
+                if (name.startsWith("type: ")) {
+                    untickType(name, state);
+                    return;
+                }
+                const value = get(name) + (state ? -1 : 1);
+                ticked.set(name, value);
+                if (value != 0) {
                     keys.delete(name);
                     console.log(`${name} deleted`);
                 } else {
@@ -52,7 +83,8 @@ export function getAllResources(kotlinRetainedSize, kotlinDeclarationsSize) {
         "irShallowMap": irShallowMap,
         "keys": keys,
         "updateHierarchy": updateHierarchy,
-        "buildOnTableUpdate": buildOnTableUpdate
+        "buildOnTableUpdate": buildOnTableUpdate,
+        "typeToNames": typeToNames
     };
 }
 export const height = window.innerHeight * 0.97;

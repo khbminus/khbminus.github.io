@@ -12,7 +12,7 @@ import {buildTreeView} from "../graph/treeView";
 import {TreeMapNode} from "../processing";
 
 export function build(kotlinRetainedSize, kotlinDeclarationsSize) {
-    const {buildOnTableUpdate, irMap, updateHierarchy} = getAllResources(kotlinRetainedSize, kotlinDeclarationsSize);
+    const {buildOnTableUpdate, irMap, updateHierarchy, typeToNames} = getAllResources(kotlinRetainedSize, kotlinDeclarationsSize);
     const name = d => d.ancestors().reverse().map(d => d.data.name).join("/")
     const format = d3.format(",d")
     const ratioFormat = d3.format(".4f")
@@ -38,7 +38,7 @@ export function build(kotlinRetainedSize, kotlinDeclarationsSize) {
     });
     select.oninput = update;
     update();
-    buildTreeView(irMap, true, buildOnTableUpdate(update));
+    buildTreeView(irMap, true, buildOnTableUpdate(update), [...typeToNames.keys()]);
 
     function render(group: d3.Selection<SVGGElement, any, HTMLElement, any>, root: HierarchyRectangularNode<TreeMapNode>) {
         const node = group

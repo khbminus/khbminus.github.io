@@ -5,8 +5,9 @@ let visibilityMap: Map<string, boolean> = null
 let updFunc: (a: string[], b: boolean) => void = null
 let dValue = false
 
-export function buildTreeView(irMap: Map<string, number>, defaultValue: boolean, onTableUpdate: (a: string[], b: boolean) => void) {
-    keys = [...irMap.keys()]
+export function buildTreeView(irMap: Map<string, number>, defaultValue: boolean, onTableUpdate: (a: string[], b: boolean) => void, types: string[] = []) {
+    keys = [...irMap.keys()].concat(types.map(x => `type: ${x}`))
+    console.log(`types: ${types}`);
     function tickAll(defaultValue: boolean) {
         const rowLength = table.rows.length;
         const updated: string[] = [];
@@ -27,11 +28,9 @@ export function buildTreeView(irMap: Map<string, number>, defaultValue: boolean,
             onTableUpdate(updated, defaultValue);
         }
     }
-    const entries = [...irMap.entries()];
-    visibilityMap = new Map(entries.map(x => {
-        const name = x[0];
-        return [name, defaultValue];
-    }))
+    visibilityMap = new Map(keys.map(x => {
+        return [x, defaultValue];
+    }));
     dValue = defaultValue;
     updFunc = onTableUpdate;
     const searchBarContainer = document.getElementById("tree-view-searchbar");

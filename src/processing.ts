@@ -61,7 +61,6 @@ export function findHierarchy(
         );
         leafs.push(newLeaf);
     });
-    console.log(name, leafs)
     return {
         name: name,
         category: "middle",

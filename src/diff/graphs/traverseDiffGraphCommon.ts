@@ -115,7 +115,7 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
 
     const reachable: Set<string> = new Set();
 
-    const categories = ["function", "property", "field", "anonymousInitializer",
+    const categories = ["function", "property", "field", "anonymous initializer",
             "class", "unknown"],
         colorScale = d3.scaleOrdinal() // the scale function
             .domain(categories)
@@ -406,7 +406,7 @@ export function buildTraversableGraph(diffDeclarationsDifference, diffMetaNodesI
             .data(categories)
             .enter()
             .append("text")
-            .text(d => `Ir element with type ${d}`)
+            .text((d, i) => i == 0 ? `Ir element with type ${d}` : `${d}`)
             .attr("x", "1em")
             .attr("y", (d, i) => `${1.5 + i * 1.5}em`)
             .attr("class", ".cat-text");
