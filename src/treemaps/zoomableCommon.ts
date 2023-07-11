@@ -1,19 +1,18 @@
 import * as d3 from "d3";
-import {HierarchyRectangularNode, max, min} from "d3";
+import {HierarchyRectangularNode} from "d3";
 import {createSvg} from "../svgGen";
-import {
-    buildOnSizeUpdate,
-    getAllResources,
-    getId,
-    height,
-    width
-} from "./resources";
+import {buildOnSizeUpdate, getAllResources, getId, height, width} from "./resources";
 
 import {buildTreeView} from "../graph/treeView";
 import {TreeMapNode} from "../processing";
 
 export function build(kotlinRetainedSize, kotlinDeclarationsSize) {
-    const {buildOnTableUpdate, irMap, updateHierarchy, typeToNames} = getAllResources(kotlinRetainedSize, kotlinDeclarationsSize);
+    const {
+        buildOnTableUpdate,
+        irMap,
+        updateHierarchy,
+        typeToNames
+    } = getAllResources(kotlinRetainedSize, kotlinDeclarationsSize);
     const name = d => d.ancestors().reverse().map(d => d.data.name).join("/")
     const format = d3.format(",d")
     const ratioFormat = d3.format(".4f")
@@ -24,18 +23,23 @@ export function build(kotlinRetainedSize, kotlinDeclarationsSize) {
         .attr("viewBox", [0.5, -30.5, width, height + 30])
         .attr("transform", "translate(0, 30)")
     const treemap = d3
-        .treemap()
+        .treemap<TreeMapNode>()
         .tile(tile);
     let group = null
 
     const select = document.getElementById("viewMode") as HTMLSelectElement;
+    let currentNode: HierarchyRectangularNode<TreeMapNode> = null
     const update = updateHierarchy((data) => {
         svg.selectAll("g").remove()
+        const parents = (currentNode !== null ?  currentNode.ancestors().reverse().map(x => x.data.name) : ["Kotlin IR"]);
         x = d3.scaleLinear().rangeRound([0, width]);
         y = d3.scaleLinear().rangeRound([0, height]);
+        const d = tryToFindParent(treemap(data), parents, 0);
+        x.domain([d.x0, d.x1]);
+        y.domain([d.y0, d.y1]);
         group = svg
             .append("g")
-            .call(render, treemap(data))
+            .call(render, d);
     });
     select.oninput = update;
     update();
@@ -44,6 +48,7 @@ export function build(kotlinRetainedSize, kotlinDeclarationsSize) {
     sizeSelector.oninput = buildOnSizeUpdate(update);
 
     function render(group: d3.Selection<SVGGElement, any, HTMLElement, any>, root: HierarchyRectangularNode<TreeMapNode>) {
+        currentNode = root
         const node = group
             .selectAll("g")
             .data(root.children.concat(root))
@@ -176,5 +181,18 @@ export function build(kotlinRetainedSize, kotlinDeclarationsSize) {
             child.y0 = y0 + child.y0 / height * (y1 - y0);
             child.y1 = y0 + child.y1 / height * (y1 - y0);
         }
+    }
+
+    function tryToFindParent(node: HierarchyRectangularNode<TreeMapNode>, names: string[], depth: number): HierarchyRectangularNode<TreeMapNode> {
+        if (depth + 1 == names.length) {
+            return node;
+        }
+        for (const x in node.children) {
+            const child = node.children[x];
+            if (child.data.name === names[depth + 1]) {
+                return tryToFindParent(child, names, depth + 1);
+            }
+        }
+        return node;
     }
 }
