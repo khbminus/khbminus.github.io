@@ -24,6 +24,7 @@ export function findHierarchy(
         .map(x => {
             const split = splitByDot(x);
             const name = split[split.length - 1];
+            const value = (values.has(x) ? values.get(x) : 0);
             if (shallowValues != null) {
                 const shallow = (shallowValues.has(x) ? shallowValues.get(x) : 0);
                 return {
@@ -33,7 +34,7 @@ export function findHierarchy(
                     category: "middle",
                     children: [{
                         name: `${x}`,
-                        value: values.get(x),
+                        value: value,
                         shallowValue: shallow,
                         category: "retained",
                         children: []
@@ -42,7 +43,7 @@ export function findHierarchy(
             }
             return {
                 name: name,
-                value: values.get(x),
+                value: value,
                 category: topCategory,
                 shallowValue: null,
                 children: []
@@ -61,18 +62,19 @@ export function findHierarchy(
         );
         leafs.push(newLeaf);
     });
+    const allLeafsShallowZero = leafs.reduce((a, b) => a && b.shallowValue === null, true)
     return {
         name: name,
         category: "middle",
         children: leafs,
-        shallowValue: leafs.map(x => x.shallowValue).reduce((a, b) => a + b, 0),
+        shallowValue: allLeafsShallowZero ? null : leafs.map(x => x.shallowValue).reduce((a, b) => a + b, 0),
         value: 0// leafs.map(x => x.value).reduce((a, b) => a + b)
     }
 }
 
 export function postProcess(node: TreeMapNode, radius: number): TreeMapNode | number {
     if (node === null) {
-        return;
+        return 0;
     }
     if (node.children.length === 0) {
         return (node.value >= radius ? node : node.value);
@@ -84,7 +86,8 @@ export function postProcess(node: TreeMapNode, radius: number): TreeMapNode | nu
         .filter((x): x is number => typeof x === "number")
         .reduce((a, b) => a + b, 0);
     const leafs = processed
-        .filter((x): x is TreeMapNode => typeof x !== "number")
+        .filter((x): x is TreeMapNode => typeof x !== "number");
+    console.log(node.name, leafs, node.children);
     if (leafs.length === 0) {
         return node.value + additionalValue;
     }

@@ -99,7 +99,8 @@ export function build(kotlinRetainedSize, kotlinDeclarationsSize) {
             .selectAll("tspan")
             .data(d => {
                 let x: string[] = [(d === root ? name(d) : d.data.name)];
-                x = x.concat(`Retained size: ${format(d.value)}`);
+                const rootSize = (d.data.category == "shallow" ? "Shallow" : "Retained")
+                x = x.concat(`${rootSize} size: ${format(d.value)}`);
                 if (d !== root && d.data.shallowValue !== null) {
                     console.log(d.data.name, d.data.shallowValue);
                     x = x.concat(`Shallow size: ${format(d.data.shallowValue)}`);

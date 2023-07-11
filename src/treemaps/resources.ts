@@ -12,10 +12,25 @@ export function getAllResources(kotlinRetainedSize, kotlinDeclarationsSize) {
     const keys = new Set([...irMap.keys()]);
 
     const getHierarchy = function (irMap: Map<string, number>, irMap2: Map<string, number>, topCategory: TreeMapCategory, radius: number) {
-        const data = postProcess(
+        let data = postProcess(
             findHierarchy([...keys], 0, "Kotlin IR", irMap, irMap2, topCategory),
             radius
         );
+        const isNum = (x: number | TreeMapNode): x is number => typeof x === "number";
+        if (isNum(data)) {
+            const range = <HTMLInputElement>document.getElementById("minimumSize");
+            range.value = range.max;
+            document.getElementById("size-value").textContent = range.value;
+            minimumRenderableSize = range.valueAsNumber;
+            data = postProcess(
+                findHierarchy([...keys], 0, "Kotlin IR", irMap, irMap2, topCategory),
+                minimumRenderableSize
+            );
+            if (isNum(data)) {
+                throw new Error("couldn't build any treemap");
+            }
+        }
+        console.log(data);
         const hierarchy = d3
             .hierarchy(data)
             .sum(d => d.value);
