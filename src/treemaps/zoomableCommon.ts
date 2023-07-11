@@ -31,7 +31,7 @@ export function build(kotlinRetainedSize, kotlinDeclarationsSize) {
     let currentNode: HierarchyRectangularNode<TreeMapNode> = null
     const update = updateHierarchy((data) => {
         svg.selectAll("g").remove()
-        const parents = (currentNode !== null ?  currentNode.ancestors().reverse().map(x => x.data.name) : ["Kotlin IR"]);
+        const parents = (currentNode !== null ? currentNode.ancestors().reverse().map(x => x.data.name) : ["Kotlin IR"]);
         x = d3.scaleLinear().rangeRound([0, width]);
         y = d3.scaleLinear().rangeRound([0, height]);
         const d = tryToFindParent(treemap(data), parents, 0);
